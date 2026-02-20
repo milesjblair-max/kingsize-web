@@ -3,8 +3,9 @@ export const Hero = () => {
         <section
             className="relative overflow-hidden text-white flex items-center"
             style={{
-                height: "280px",
+                height: "clamp(180px, 25vw, 280px)",
                 background: "linear-gradient(120deg, #0E1A2B 0%, #122238 60%, #142640 100%)",
+                maxWidth: "100vw",
             }}
         >
             {/* Subtle radial highlight behind text area */}
@@ -15,33 +16,43 @@ export const Hero = () => {
                 }}
             />
 
-            {/* Oversized "1972" watermark — right side, desktop only */}
+            {/* "Founded in 1972" watermark — desktop only, non-overflowing */}
             <span
                 aria-hidden="true"
-                className="hidden md:block absolute right-12 select-none font-bold leading-none tracking-tighter"
+                className="hidden md:block absolute right-8 select-none font-bold leading-none"
                 style={{
-                    fontSize: "120px",
+                    fontSize: "clamp(60px, 8vw, 120px)",
                     color: "rgba(255,255,255,0.05)",
                     top: "50%",
                     transform: "translateY(-50%)",
                     userSelect: "none",
                     letterSpacing: "-0.02em",
+                    pointerEvents: "none",
+                    maxWidth: "40vw",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
                 }}
             >
                 Founded in 1972
             </span>
 
             {/* Left-aligned text block */}
-            <div className="relative z-10 pl-10 md:pl-20 max-w-[680px]">
-
+            <div
+                className="relative z-10"
+                style={{
+                    paddingLeft: "clamp(16px, 5vw, 80px)",
+                    paddingRight: "clamp(16px, 5vw, 40px)",
+                    maxWidth: "min(680px, 60vw)",
+                }}
+            >
                 {/* Accent Line + Headline row */}
-                <div className="flex items-start gap-5 mb-4">
+                <div className="flex items-start gap-4 mb-3">
                     {/* Thin vertical gold accent line */}
                     <div
                         className="flex-shrink-0 mt-1"
                         style={{
                             width: "4px",
-                            height: "52px",
+                            height: "clamp(32px, 4vw, 52px)",
                             background: "linear-gradient(to bottom, #C9A96E, #A8885A)",
                             borderRadius: "2px",
                         }}
@@ -50,7 +61,7 @@ export const Hero = () => {
                     <h1
                         className="font-bold text-white"
                         style={{
-                            fontSize: "clamp(32px, 4vw, 46px)",
+                            fontSize: "clamp(20px, 3.5vw, 46px)",
                             lineHeight: "1.12",
                             letterSpacing: "-0.01em",
                         }}
@@ -60,11 +71,12 @@ export const Hero = () => {
                     </h1>
                 </div>
 
-                {/* Subtext */}
+                {/* Subtext — hidden on very small screens */}
                 <p
-                    className="pl-9"
+                    className="hidden sm:block"
                     style={{
-                        fontSize: "18px",
+                        paddingLeft: "clamp(16px, 2.5vw, 36px)",
+                        fontSize: "clamp(13px, 1.5vw, 18px)",
                         lineHeight: "1.55",
                         color: "rgba(255,255,255,0.68)",
                         maxWidth: "560px",
@@ -76,8 +88,13 @@ export const Hero = () => {
                 {/* Micro CTA */}
                 <a
                     href="#new-arrivals"
-                    className="pl-9 mt-4 inline-block text-sm font-medium tracking-wide hover:opacity-100 transition-opacity"
-                    style={{ color: "#C9A96E", opacity: 0.85 }}
+                    className="mt-3 inline-block text-sm font-medium tracking-wide hover:opacity-100 transition-opacity"
+                    style={{
+                        color: "#C9A96E",
+                        opacity: 0.85,
+                        paddingLeft: "clamp(16px, 2.5vw, 36px)",
+                        fontSize: "clamp(11px, 1.2vw, 14px)",
+                    }}
                 >
                     Explore the new experience →
                 </a>

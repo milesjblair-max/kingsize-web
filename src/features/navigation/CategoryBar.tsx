@@ -239,13 +239,18 @@ export const CategoryBar = () => {
     const activeCategory = categories.find((c) => c.name === hoveredCategory);
 
     return (
+        // The outer wrapper is `relative` so the dropdown anchors to it, spanning full width
         <div
-            className="border-b border-gray-200 bg-white z-40 h-[44px] relative"
+            className="border-b border-gray-200 bg-white z-40 relative"
+            style={{ height: "44px" }}
             onMouseLeave={() => setHoveredCategory(null)}
         >
-            {/* Category tab row */}
-            <div className="w-full px-6 h-full flex items-center">
-                <ul className="flex space-x-8 h-full">
+            {/* Category tab row — scrollable on small screens */}
+            <div
+                className="w-full px-4 md:px-6 h-full flex items-center"
+                style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+                <ul className="flex h-full" style={{ gap: "clamp(16px, 3vw, 32px)", whiteSpace: "nowrap" }}>
                     {categories.map((category) => (
                         <li
                             key={category.name}
@@ -255,8 +260,8 @@ export const CategoryBar = () => {
                             <Link
                                 href={category.href}
                                 className={`text-sm font-bold uppercase tracking-wide transition-colors pb-1 ${hoveredCategory === category.name
-                                        ? "text-orange-600 border-b-2 border-orange-600"
-                                        : "text-gray-900 border-b-2 border-transparent"
+                                    ? "text-orange-600 border-b-2 border-orange-600"
+                                    : "text-gray-900 border-b-2 border-transparent"
                                     }`}
                             >
                                 {category.name}

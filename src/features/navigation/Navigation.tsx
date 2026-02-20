@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CategoryBar } from "./CategoryBar";
-import { Truck, RotateCcw, Tag, Search } from "lucide-react";
+import { Truck, RotateCcw, Tag, Search, Menu, X } from "lucide-react";
 
 // --- Rotating messages ---
 const MESSAGES = [
@@ -43,7 +43,7 @@ const RotatingPill = () => {
 
     return (
         <div
-            className="hidden md:flex items-center"
+            className="hidden lg:flex items-center flex-shrink-0"
             onMouseEnter={() => { isPaused.current = true; }}
             onMouseLeave={() => { isPaused.current = false; }}
         >
@@ -58,7 +58,8 @@ const RotatingPill = () => {
                     display: "flex",
                     alignItems: "center",
                     gap: "6px",
-                    minWidth: "220px",
+                    minWidth: "210px",
+                    maxWidth: "240px",
                 }}
             >
                 <Icon size={13} className="text-gray-500 flex-shrink-0" strokeWidth={2} />
@@ -90,7 +91,8 @@ const SearchBar = () => {
     const [query, setQuery] = useState("");
 
     return (
-        <div className="hidden md:flex items-center relative" style={{ width: "300px" }}>
+        <div className="hidden md:flex items-center relative flex-shrink-0"
+            style={{ width: "clamp(160px, 20vw, 300px)" }}>
             <Search
                 size={15}
                 className="absolute left-3 text-gray-400 pointer-events-none"
@@ -125,54 +127,114 @@ const SearchBar = () => {
     );
 };
 
+// --- Mobile menu ---
+const MobileMenu = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-[200] flex">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+            {/* Drawer */}
+            <div className="relative z-10 w-72 max-w-[85vw] bg-white h-full flex flex-col shadow-2xl">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                    <span className="font-bold text-gray-900">Menu</span>
+                    <button onClick={onClose}><X size={20} /></button>
+                </div>
+                <nav className="flex-1 overflow-y-auto px-5 py-4">
+                    {["New In", "Casual Wear", "Smart & Formal", "Active & Sport", "Footwear", "Essentials"].map((cat) => (
+                        <a key={cat} href="#" className="block py-3 text-sm font-bold border-b border-gray-50 text-gray-800 hover:text-orange-600">
+                            {cat}
+                        </a>
+                    ))}
+                    <div className="mt-6 space-y-3">
+                        <Link href="/about" className="block text-sm text-gray-600 hover:text-black">About Us</Link>
+                        <Link href="/help" className="block text-sm text-gray-600 hover:text-black">Help</Link>
+                        <Link href="/contact" className="block text-sm text-gray-600 hover:text-black">Contact</Link>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    );
+};
+
 // --- Main Navigation ---
 export const Navigation = () => {
+    const [mobileOpen, setMobileOpen] = useState(false);
+
     return (
-        <nav className="bg-white flex flex-col relative z-50">
-            {/* Top Utility Bar */}
-            <div className="border-b border-gray-200">
-                <div className="flex justify-between items-center h-[160px] px-6">
+        <>
+            <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} />
+            <nav className="bg-white flex flex-col relative z-50" style={{ maxWidth: "100vw" }}>
+                {/* Top Header Bar */}
+                <div className="border-b border-gray-200">
+                    <div
+                        className="flex items-center justify-between px-4 md:px-6"
+                        style={{ height: "clamp(64px, 10vw, 120px)" }}
+                    >
+                        {/* Left: Hamburger (mobile) + Logo */}
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                            {/* Hamburger — visible on < md */}
+                            <button
+                                className="md:hidden flex items-center justify-center w-9 h-9 rounded hover:bg-gray-100 flex-shrink-0"
+                                onClick={() => setMobileOpen(true)}
+                                aria-label="Open menu"
+                            >
+                                <Menu size={22} />
+                            </button>
 
-                    {/* Left: Logo */}
-                    <div className="flex items-center">
-                        <Link href="/" className="block">
-                            <Image
-                                src="/logo.png"
-                                alt="Kingsize Big & Tall"
-                                width={0}
-                                height={0}
-                                sizes="100vw"
-                                className="h-[148px] w-auto object-contain block"
-                                priority
-                            />
-                        </Link>
-                    </div>
+                            <Link href="/" className="block flex-shrink-0">
+                                <Image
+                                    src="/logo.png"
+                                    alt="Kingsize Big & Tall"
+                                    width={0}
+                                    height={0}
+                                    sizes="(max-width: 768px) 120px, 200px"
+                                    style={{
+                                        height: "clamp(48px, 8vw, 110px)",
+                                        width: "auto",
+                                        objectFit: "contain",
+                                        display: "block",
+                                    }}
+                                    priority
+                                />
+                            </Link>
+                        </div>
 
-                    {/* Centre: Rotating pill + Search */}
-                    <div className="flex items-center gap-3">
-                        <RotatingPill />
-                        <SearchBar />
-                    </div>
+                        {/* Centre: Pill + Search — hidden on mobile */}
+                        <div className="flex items-center gap-3 flex-1 justify-center mx-4 min-w-0">
+                            <RotatingPill />
+                            <SearchBar />
+                        </div>
 
-                    {/* Right: Utility links */}
-                    <div className="flex gap-6 items-center text-sm font-bold text-gray-700">
-                        <Link href="/about" className="hover:text-black transition-colors hidden md:block">
-                            About Us
-                        </Link>
-                        <Link href="/help" className="hover:text-black transition-colors">
-                            Help
-                        </Link>
-                        <Link href="/contact" className="hover:text-black transition-colors">
-                            Contact
-                        </Link>
-                        <button className="hover:text-black transition-colors">Account</button>
-                        <button className="hover:text-black transition-colors">Cart</button>
+                        {/* Right: Utility links */}
+                        <div className="flex items-center gap-4 flex-shrink-0">
+                            {/* Full links on lg+ */}
+                            <div className="hidden lg:flex gap-5 items-center text-sm font-bold text-gray-700">
+                                <Link href="/about" className="hover:text-black transition-colors whitespace-nowrap">About Us</Link>
+                                <Link href="/help" className="hover:text-black transition-colors">Help</Link>
+                                <Link href="/contact" className="hover:text-black transition-colors">Contact</Link>
+                                <button className="hover:text-black transition-colors">Account</button>
+                                <button className="hover:text-black transition-colors">Cart</button>
+                            </div>
+                            {/* Compact on md */}
+                            <div className="hidden md:flex lg:hidden gap-4 items-center text-sm font-bold text-gray-700">
+                                <Link href="/help" className="hover:text-black">Help</Link>
+                                <button className="hover:text-black">Account</button>
+                                <button className="hover:text-black">Cart</button>
+                            </div>
+                            {/* Mobile: just Account + Cart icons */}
+                            <div className="flex md:hidden gap-4 items-center text-sm font-bold text-gray-700">
+                                <button className="hover:text-black">Cart</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Category Bar */}
-            <CategoryBar />
-        </nav>
+                {/* Category Bar — desktop only */}
+                <div className="hidden md:block">
+                    <CategoryBar />
+                </div>
+            </nav>
+        </>
     );
 };
