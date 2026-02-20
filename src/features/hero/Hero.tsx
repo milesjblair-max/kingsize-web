@@ -19,21 +19,22 @@ export const Hero = () => {
             {/* "Founded in 1972" watermark — desktop only, non-overflowing */}
             <span
                 aria-hidden="true"
-                className="hidden md:block absolute right-8 select-none font-bold leading-none"
+                className="hidden md:block absolute right-8 select-none font-bold text-right"
                 style={{
-                    fontSize: "clamp(60px, 8vw, 120px)",
+                    fontSize: "clamp(40px, 5.5vw, 90px)",
                     color: "rgba(255,255,255,0.05)",
                     top: "50%",
                     transform: "translateY(-50%)",
                     userSelect: "none",
                     letterSpacing: "-0.02em",
+                    lineHeight: 1.1,
                     pointerEvents: "none",
-                    maxWidth: "40vw",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
+                    maxWidth: "32vw",
+                    wordBreak: "break-word",
+                    whiteSpace: "normal",
                 }}
             >
-                Founded in 1972
+                Founded in<br />1972
             </span>
 
             {/* Left-aligned text block */}
