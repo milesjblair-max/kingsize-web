@@ -67,8 +67,8 @@ export const Hero = () => {
                             letterSpacing: "-0.01em",
                         }}
                     >
-                        Built on 50 Years of Fit.<br />
-                        Designed for What&apos;s Next.
+                        50 years serving big and tall.<br />
+                        Now we&rsquo;re making it effortless.
                     </h1>
                 </div>
 
@@ -83,7 +83,7 @@ export const Hero = () => {
                         maxWidth: "560px",
                     }}
                 >
-                    Built on family values, designed for real fit, and trusted to help every man feel confident in his own size.
+                    Smarter sizing, sharper recommendations, one account that remembers what works.
                 </p>
 
                 {/* Micro CTA */}
@@ -97,7 +97,7 @@ export const Hero = () => {
                         fontSize: "clamp(11px, 1.2vw, 14px)",
                     }}
                 >
-                    Explore the new experience →
+                    Explore the new experience coming soon &rarr;
                 </a>
             </div>
         </section>
