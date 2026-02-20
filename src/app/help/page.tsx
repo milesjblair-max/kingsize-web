@@ -143,6 +143,21 @@ export default function HelpPage() {
                 {!activeCategory ? (
                     /* Category Grid */
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Returns Policy — first tile, routes to dedicated page */}
+                        <Link
+                            href="/help/returns-policy"
+                            className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:border-gray-300 transition-all text-left flex flex-col h-full group"
+                        >
+                            <div className="mb-4 text-gray-900 group-hover:text-black">
+                                <RotateCcw size={32} strokeWidth={1.5} />
+                            </div>
+                            <h3 className="font-bold text-gray-900 mb-1 group-hover:text-black">Returns Policy</h3>
+                            <div className="mt-auto flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                <ArrowRight size={20} className="text-gray-400" />
+                            </div>
+                        </Link>
+
+                        {/* All other categories */}
                         {HELP_CATEGORIES.map((cat) => (
                             <button
                                 key={cat.id}
