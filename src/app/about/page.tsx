@@ -1,29 +1,73 @@
+import Image from "next/image";
+
 export default function About() {
     return (
-        <div className="min-h-screen bg-white text-gray-900 pb-16">
-            <div className="max-w-[800px] mx-auto px-6 py-12">
+        <div className="min-h-screen bg-white text-gray-900 pb-16 overflow-x-hidden">
+            {/* Main Framing Container */}
+            <div className="max-w-[1400px] mx-auto px-6 py-12 flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-16">
 
-                {/* Page Title */}
-                <h1 className="text-4xl font-bold tracking-tight mb-6 text-black">
-                    About Kingsize
-                </h1>
+                {/* Image 1: Left (Kingsize 1972) */}
+                <div className="w-full sm:w-[320px] lg:w-[260px] xl:w-[280px] flex-shrink-0 relative group">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[6px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] bg-gray-50 border border-gray-100">
+                        <Image
+                            src="/images/heritage/Kingsize 1972.jpg"
+                            alt="Kingsize Store 1972"
+                            fill
+                            className="object-cover grayscale brightness-[1.1] contrast-[1.15] transition-all duration-700"
+                            sizes="(max-width: 1024px) 320px, 300px"
+                        />
+                        {/* Heritage Grain Overlay */}
+                        <div className="absolute inset-0 pointer-events-none opacity-[0.04] mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')]" />
+                    </div>
+                    <p className="mt-4 text-[11px] uppercase tracking-widest text-gray-400 font-bold text-center lg:text-left">Est. 1972 · Original Location</p>
+                </div>
 
-                {/* Intro Section */}
-                <p className="text-lg leading-7 mb-4 text-gray-800">
-                    Kingsize Big &amp; Tall is an Australian family-owned menswear business built on one simple belief: every man deserves clothing that fits properly, feels comfortable, and reflects his personal style.
-                </p>
-                <p className="text-lg leading-7 mb-4 text-gray-800">
-                    Founded in 1972 with the opening of our first store in Inglewood, Western Australia, Kingsize was created to serve a market that had long been overlooked.
-                </p>
-                <p className="text-lg leading-7 mb-4 text-gray-800">
-                    From the beginning, the focus was not just on offering larger sizes. It was about understanding proportion, comfort, confidence, and the real needs of big and tall men. That philosophy continues to shape everything we do today.
-                </p>
-                <p className="text-lg leading-7 mb-4 text-gray-800">
-                    Over more than five decades, Kingsize has grown into one of Australia&apos;s most trusted destinations for big and tall menswear, with stores across multiple states and a long-standing online presence that began in the early days of ecommerce.
-                </p>
-                <p className="text-lg leading-7 mb-4 text-gray-800">
-                    Generations of customers rely on Kingsize not only for clothing, but for honest advice, dependable quality, and a shopping experience built on respect.
-                </p>
+                {/* Main Text Content */}
+                <div className="flex-1 max-w-[700px] order-2 lg:order-none">
+                    {/* Page Title */}
+                    <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-8 text-black">
+                        About Kingsize
+                    </h1>
+
+                    {/* Intro Section Content */}
+                    <div className="space-y-6">
+                        <p className="text-lg leading-relaxed text-gray-800">
+                            Kingsize Big &amp; Tall is an Australian family-owned menswear business built on one simple belief: every man deserves clothing that fits properly, feels comfortable, and reflects his personal style.
+                        </p>
+                        <p className="text-lg leading-relaxed text-gray-800">
+                            Founded in 1972 with the opening of our first store in Inglewood, Western Australia, Kingsize was created to serve a market that had long been overlooked.
+                        </p>
+                        <p className="text-lg leading-relaxed text-gray-800">
+                            From the beginning, the focus was not just on offering larger sizes. It was about understanding proportion, comfort, confidence, and the real needs of big and tall men. That philosophy continues to shape everything we do today.
+                        </p>
+                        <p className="text-lg leading-relaxed text-gray-800">
+                            Over more than five decades, Kingsize has grown into one of Australia&apos;s most trusted destinations for big and tall menswear, with stores across multiple states and a long-standing online presence that began in the early days of ecommerce.
+                        </p>
+                        <p className="text-lg leading-relaxed text-gray-800">
+                            Generations of customers rely on Kingsize not only for clothing, but for honest advice, dependable quality, and a shopping experience built on respect.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Image 2: Right (Kingsize original) */}
+                <div className="w-full sm:w-[320px] lg:w-[260px] xl:w-[280px] flex-shrink-0 relative group order-3 lg:order-none">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[6px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] bg-gray-50 border border-gray-100">
+                        <Image
+                            src="/images/heritage/Kingsize original.jpg"
+                            alt="Kingsize Original Heritage"
+                            fill
+                            className="object-cover grayscale brightness-[1.1] contrast-[1.15] transition-all duration-700"
+                            sizes="(max-width: 1024px) 320px, 300px"
+                        />
+                        {/* Heritage Grain Overlay */}
+                        <div className="absolute inset-0 pointer-events-none opacity-[0.04] mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')]" />
+                    </div>
+                    <p className="mt-4 text-[11px] uppercase tracking-widest text-gray-400 font-bold text-center lg:text-right">A Family Legacy · Built on Trust</p>
+                </div>
+            </div>
+
+            {/* Bottom Content Container */}
+            <div className="max-w-[800px] mx-auto px-6">
 
                 {/* What Kingsize stands for */}
                 <h2 className="text-2xl font-bold mt-10 mb-4 text-black">
