@@ -6,7 +6,6 @@ export const metadata = {
     description: "Our full returns and exchanges policy for in-store and online purchases.",
 };
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <section className="mb-10">
         <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">{title}</h2>
@@ -14,46 +13,20 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
     </section>
 );
 
-// ─── Info box ─────────────────────────────────────────────────────────────────
-const InfoBox = ({ children }: { children: React.ReactNode }) => (
-    <div className="bg-amber-50 border border-amber-100 rounded-lg px-5 py-4 text-sm text-amber-900 leading-relaxed">
-        {children}
-    </div>
-);
-
-// ─── Bullet list ──────────────────────────────────────────────────────────────
 const BulletList = ({ items }: { items: string[] }) => (
-    <ul className="space-y-1.5">
-        {items.map((item) => (
-            <li key={item} className="flex items-start gap-2">
-                <span className="text-gray-400 mt-0.5 flex-shrink-0">·</span>
-                <span>{item}</span>
-            </li>
-        ))}
+    <ul className="space-y-1.5 list-disc pl-5 marker:text-gray-300">
+        {items.map((item) => <li key={item}>{item}</li>)}
     </ul>
 );
 
-// ─── Store list ───────────────────────────────────────────────────────────────
-const STORES = [
-    { state: "WA", locations: "Inglewood · Cannington · Joondalup" },
-    { state: "QLD", locations: "Strathpine · Brisbane · Mount Gravatt · Chermside" },
-    { state: "VIC", locations: "Dandenong" },
-];
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ReturnsPolicyPage() {
     return (
         <div className="bg-gray-50 min-h-screen pb-20">
-
-            {/* Header — matches Help page style */}
+            {/* Header */}
             <div className="bg-white pt-12 pb-8 shadow-sm border-b border-gray-100">
                 <div className="max-w-3xl mx-auto px-4">
-                    <Link
-                        href="/help"
-                        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-6 font-medium"
-                    >
-                        <ArrowLeft size={15} strokeWidth={2} />
-                        Back to Help
+                    <Link href="/help" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-6 font-medium">
+                        <ArrowLeft size={15} strokeWidth={2} /> Back to Help
                     </Link>
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -61,141 +34,86 @@ export default function ReturnsPolicyPage() {
                         </div>
                         <h1 className="text-3xl font-bold text-gray-900">Returns Policy</h1>
                     </div>
-                    <p className="text-gray-500 text-base ml-[52px]">
-                        Shop with confidence. If something isn&apos;t right, we&apos;re here to help.
-                    </p>
                 </div>
             </div>
 
-            {/* Content */}
             <div className="max-w-3xl mx-auto px-4 mt-10">
+                <div className="bg-amber-50 border border-amber-100 rounded-lg px-5 py-4 text-sm text-amber-900 mb-8">
+                    <strong>Shop with confidence.</strong> If something is not right, we will help fix it. Underwear is non-returnable.
+                </div>
 
-                {/* Important notice */}
-                <InfoBox>
-                    <strong>Please note:</strong> Underwear is non-returnable.
-                </InfoBox>
+                {/* Return Address Card */}
+                <div className="rounded-xl border border-gray-100 bg-white p-6 mb-10 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Return Address</p>
+                    <p className="font-bold text-gray-900 leading-relaxed text-lg">
+                        Kingsize Big &amp; Tall<br />
+                        PO Box 44<br />
+                        Inglewood WA 6932
+                    </p>
+                    <div className="mt-4 flex items-center gap-2 text-gray-600 font-medium">
+                        <Phone size={15} strokeWidth={2} className="text-gray-400" />
+                        <span>1800 810 702</span>
+                        <span className="text-gray-300">|</span>
+                        <span className="text-gray-500">8am – 4pm AWST</span>
+                    </div>
+                </div>
 
-                <div className="mt-8">
+                <div className="grid grid-cols-1 gap-2">
+                    <Section title="How long do I have to return an item?">
+                        <p>You have 28 days to return or exchange your item.</p>
+                        <BulletList items={["In-store: 28 days from purchase", "Online: 28 days from delivery"]} />
+                        <p className="font-bold text-gray-800 mt-4">Items must:</p>
+                        <BulletList items={["Have original tags attached", "Be unworn and only tried on for size"]} />
+                    </Section>
 
-                    {/* In-store */}
-                    <Section title="In-Store Returns and Exchanges">
-                        <p>You have <strong>28 days from the date of purchase</strong> to return or exchange an item in store.</p>
+                    <Section title="Can I return an online order in store?">
+                        <p className="text-gray-900 font-bold">Yes.</p>
+                        <p>Bring your tax invoice as proof of purchase. Refunds are processed back to your original payment method.</p>
+                        <p className="italic text-gray-500">Items that do not meet return conditions may be declined.</p>
+                    </Section>
 
-                        <p className="font-semibold text-gray-800">Items must:</p>
+                    <Section title="How do online returns work?">
                         <BulletList items={[
-                            "Have original tags attached",
-                            "Be unworn and only tried on for size",
+                            "Complete the return form on the back of your tax invoice",
+                            "Post your item back to us",
+                            "Return postage is the customer’s responsibility",
+                            "We do not provide return labels"
                         ]} />
-
-                        <p>Online orders can be returned or exchanged in store.</p>
-                        <p>Refunds are processed back to your original payment method.</p>
-                        <p>Please bring your <strong>Tax Invoice</strong> as proof of purchase.</p>
-
-                        <div className="bg-gray-50 border border-gray-100 rounded-lg px-5 py-3 text-sm text-gray-500">
-                            Items that do not meet return conditions may be declined at the time of return.
-                        </div>
-                    </Section>
-
-                    {/* Online */}
-                    <Section title="Online Returns and Exchanges">
-                        <p>You have <strong>28 days from the date of delivery</strong> to return or exchange an item.</p>
-
-                        <p className="font-semibold text-gray-800">Items must:</p>
+                        <p className="font-bold text-gray-800 mt-4">Refunds:</p>
                         <BulletList items={[
-                            "Have original tags attached",
-                            "Be unworn and only tried on for size",
+                            "Processed to your original payment method",
+                            "Original shipping costs are not refunded",
+                            "Please allow up to 10 business days for funds to appear"
                         ]} />
-
-                        <p>We do not provide return labels. Return postage costs are the responsibility of the customer.</p>
-
-                        <div>
-                            <p className="font-semibold text-gray-800 mb-1.5">Refunds:</p>
-                            <BulletList items={[
-                                "Processed to your original payment method",
-                                "Exclude original shipping costs",
-                                "May take up to 10 business days to appear",
-                            ]} />
-                        </div>
-
-                        <p>For exchanges, additional postage costs may apply. Our team will contact you once your return has been received.</p>
-
-                        {/* Return address */}
-                        <div
-                            className="rounded-xl border border-gray-100 bg-white p-5 mt-2"
-                            style={{ boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}
-                        >
-                            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Return address</p>
-                            <p className="font-bold text-gray-900 leading-relaxed">
-                                Kingsize Big &amp; Tall<br />
-                                PO BOX 44<br />
-                                Inglewood WA 6932
-                            </p>
-                            <div className="mt-3 flex items-center gap-2 text-gray-600">
-                                <Phone size={13} strokeWidth={1.8} className="text-gray-400 flex-shrink-0" />
-                                <span>1800 810 702</span>
-                                <span className="text-gray-300">·</span>
-                                <span className="text-gray-400 text-xs">8am – 4pm AWST</span>
-                            </div>
-                        </div>
+                        <p className="mt-4">For exchanges, additional postage charges may apply. Our team will contact you once your return is received.</p>
                     </Section>
 
-                    {/* Incorrect / damaged */}
-                    <Section title="Incorrect or Damaged Items">
-                        <p>
-                            If we have made an error, or your item arrives damaged, we will cover the cost of the return.
-                            Please contact us immediately by phone or email so we can resolve it quickly.
-                        </p>
-                        <div className="bg-gray-50 border border-gray-100 rounded-lg px-5 py-3 text-sm text-gray-500">
-                            We are not responsible for incorrect size or style selections. Detailed sizing information is provided on each product page to help guide your choice.
-                        </div>
+                    <Section title="What if my item is incorrect or damaged?">
+                        <p>If we made an error or your item arrives damaged, we will cover the return cost. Contact us immediately and we will resolve it quickly.</p>
+                        <p className="mt-4 text-gray-500 text-xs">Please note: We cannot accept responsibility for incorrect size or style selections. Detailed sizing information is available on each product page.</p>
                     </Section>
 
-                    {/* Overseas */}
-                    <Section title="Overseas Returns">
+                    <Section title="Are overseas returns different?">
+                        <p className="text-gray-900 font-bold">Yes.</p>
                         <p>Customs duties and taxes paid on international orders are non-refundable.</p>
                     </Section>
 
-                    {/* Stores */}
-                    <Section title="Our Retail Stores">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {STORES.map((s) => (
-                                <div
-                                    key={s.state}
-                                    className="rounded-xl bg-white border border-gray-100 p-4"
-                                    style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
-                                >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Store size={14} strokeWidth={1.8} className="text-gray-400" />
-                                        <span className="text-xs font-bold uppercase tracking-widest text-gray-500">{s.state}</span>
-                                    </div>
-                                    <p className="text-sm text-gray-700 leading-relaxed">{s.locations}</p>
-                                </div>
-                            ))}
+                    <Section title="Where are your retail stores?">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-4">
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2 border-b pb-1">WA</h4>
+                                <ul className="text-sm space-y-1"><li>Inglewood</li><li>Cannington</li><li>Joondalup</li></ul>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2 border-b pb-1">QLD</h4>
+                                <ul className="text-sm space-y-1"><li>Strathpine</li><li>Brisbane</li><li>Mount Gravatt</li><li>Chermside</li></ul>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2 border-b pb-1">VIC</h4>
+                                <ul className="text-sm space-y-1"><li>Dandenong</li></ul>
+                            </div>
                         </div>
                     </Section>
-
-                </div>
-
-                {/* Footer CTA */}
-                <div className="mt-4 pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <p className="font-bold text-gray-900 text-sm">Still have a question?</p>
-                        <p className="text-sm text-gray-500 mt-0.5">Our team is available 8am – 4pm AWST.</p>
-                    </div>
-                    <div className="flex gap-3 flex-wrap">
-                        <Link
-                            href="/contact"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-lg hover:bg-gray-700 transition-colors"
-                        >
-                            Contact us
-                        </Link>
-                        <Link
-                            href="/help"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            Back to Help
-                        </Link>
-                    </div>
                 </div>
             </div>
         </div>

@@ -88,9 +88,89 @@ const HELP_CATEGORIES = [
         title: "Returns & Refunds",
         icon: RotateCcw,
         faqs: [
-            { q: "What is your return policy?", a: "You can return items within 30 days of purchase if they are unworn and have tags attached." },
-            { q: "How do I return an item?", a: "Visit our Returns portal to generate a return label." },
-            { q: "When will I get my refund?", a: "Refunds are processed within 5-7 business days after we receive your return." },
+            {
+                q: "How long do I have to return an item?",
+                a: (
+                    <div className="space-y-4">
+                        <p>You have 28 days to return or exchange your item.</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li><strong>In-store:</strong> 28 days from purchase</li>
+                            <li><strong>Online:</strong> 28 days from delivery</li>
+                        </ul>
+                        <p className="font-bold pt-2">Items must:</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>Have original tags attached</li>
+                            <li>Be unworn and only tried on for size</li>
+                        </ul>
+                    </div>
+                )
+            },
+            {
+                q: "Can I return an online order in store?",
+                a: (
+                    <div className="space-y-3">
+                        <p className="font-bold">Yes.</p>
+                        <p>Bring your tax invoice as proof of purchase. Refunds are processed back to your original payment method.</p>
+                        <p className="text-gray-500 italic">Items that do not meet return conditions may be declined.</p>
+                    </div>
+                )
+            },
+            {
+                q: "How do online returns work?",
+                a: (
+                    <div className="space-y-4">
+                        <ul className="list-disc pl-5 space-y-2">
+                            <li>Complete the return form on the back of your tax invoice</li>
+                            <li>Post your item back to us</li>
+                            <li>Return postage is the customer’s responsibility</li>
+                        </ul>
+                        <p className="font-bold pt-2">Refunds:</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>Processed to original payment method</li>
+                            <li>Original shipping costs are not refunded</li>
+                            <li>Please allow up to 10 business days for funds to appear</li>
+                        </ul>
+                    </div>
+                )
+            },
+            {
+                q: "What if my item is incorrect or damaged?",
+                a: "If we made an error or your item arrives damaged, we will cover the return cost. Contact us immediately and we will resolve it quickly. Note: We cannot accept responsibility for incorrect size or style selections."
+            },
+            {
+                q: "Are overseas returns different?",
+                a: "Yes. Customs duties and taxes paid on international orders are non-refundable."
+            },
+            {
+                q: "Where are your retail stores?",
+                a: (
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div>
+                            <p className="font-bold border-b mb-1">WA</p>
+                            <p className="text-xs">Inglewood, Cannington, Joondalup</p>
+                        </div>
+                        <div>
+                            <p className="font-bold border-b mb-1">QLD</p>
+                            <p className="text-xs">Strathpine, Brisbane, Mount Gravatt, Chermside</p>
+                        </div>
+                        <div className="col-span-2">
+                            <p className="font-bold border-b mb-1">VIC</p>
+                            <p className="text-xs">Dandenong</p>
+                        </div>
+                    </div>
+                )
+            },
+            {
+                q: "What is the return address?",
+                a: (
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <p className="font-bold text-gray-900">Kingsize Big & Tall</p>
+                        <p>PO Box 44</p>
+                        <p>Inglewood WA 6932</p>
+                        <p className="mt-2 text-xs font-bold text-gray-400">1800 810 702 | 8am – 4pm AWST</p>
+                    </div>
+                )
+            }
         ]
     },
     {
