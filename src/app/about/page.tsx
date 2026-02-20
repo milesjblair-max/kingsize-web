@@ -4,33 +4,33 @@ export default function About() {
     return (
         <div className="min-h-screen bg-white text-gray-900 pb-16 overflow-x-hidden">
             {/* Main Framing Container */}
-            <div className="max-w-[1400px] mx-auto px-6 py-12 flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-16">
+            <div className="max-w-[1400px] mx-auto px-6 py-16 flex flex-col lg:flex-row items-start justify-center gap-12 lg:gap-16">
 
                 {/* Image 1: Left (Kingsize 1972) */}
-                <div className="w-full sm:w-[320px] lg:w-[260px] xl:w-[280px] flex-shrink-0 relative group">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[6px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] bg-gray-50 border border-gray-100">
+                <div className="w-full sm:w-[320px] lg:w-[280px] xl:w-[320px] flex-shrink-0 flex flex-col items-center lg:items-start pt-1.5">
+                    <div className="relative h-[340px] w-full overflow-hidden rounded-[4px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] bg-white border border-gray-100 flex items-center justify-center">
                         <Image
                             src="/images/heritage/Kingsize 1972.jpg"
                             alt="Kingsize Store 1972"
                             fill
-                            className="object-cover grayscale brightness-[1.1] contrast-[1.15] transition-all duration-700"
-                            sizes="(max-width: 1024px) 320px, 300px"
+                            className="object-contain grayscale brightness-[1.05] contrast-[1.1] p-2"
+                            sizes="(max-width: 1024px) 320px, 320px"
+                            priority
                         />
-                        {/* Heritage Grain Overlay */}
-                        <div className="absolute inset-0 pointer-events-none opacity-[0.04] mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')]" />
+                        <div className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')]" />
                     </div>
-                    <p className="mt-4 text-[11px] uppercase tracking-widest text-gray-400 font-bold text-center lg:text-left">Est. 1972 · Original Location</p>
+                    <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold text-center lg:text-left leading-tight">Est. 1972 · Original Location</p>
                 </div>
 
                 {/* Main Text Content */}
-                <div className="flex-1 max-w-[700px] order-2 lg:order-none">
-                    {/* Page Title */}
-                    <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-8 text-black">
+                <div className="flex-1 max-w-[650px] order-2 lg:order-none">
+                    {/* Page Title - Aligned with image tops */}
+                    <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-8 text-black leading-[1.0]">
                         About Kingsize
                     </h1>
 
                     {/* Intro Section Content */}
-                    <div className="space-y-6">
+                    <div className="space-y-7">
                         <p className="text-lg leading-relaxed text-gray-800">
                             Kingsize Big &amp; Tall is an Australian family-owned menswear business built on one simple belief: every man deserves clothing that fits properly, feels comfortable, and reflects his personal style.
                         </p>
@@ -50,19 +50,19 @@ export default function About() {
                 </div>
 
                 {/* Image 2: Right (Kingsize original) */}
-                <div className="w-full sm:w-[320px] lg:w-[260px] xl:w-[280px] flex-shrink-0 relative group order-3 lg:order-none">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[6px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] bg-gray-50 border border-gray-100">
+                <div className="w-full sm:w-[320px] lg:w-[280px] xl:w-[320px] flex-shrink-0 flex flex-col items-center lg:items-end pt-1.5 order-3 lg:order-none">
+                    <div className="relative h-[340px] w-full overflow-hidden rounded-[4px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] bg-white border border-gray-100 flex items-center justify-center">
                         <Image
                             src="/images/heritage/Kingsize original.jpg"
                             alt="Kingsize Original Heritage"
                             fill
-                            className="object-cover grayscale brightness-[1.1] contrast-[1.15] transition-all duration-700"
-                            sizes="(max-width: 1024px) 320px, 300px"
+                            className="object-contain grayscale brightness-[1.05] contrast-[1.1] p-2"
+                            sizes="(max-width: 1024px) 320px, 320px"
+                            priority
                         />
-                        {/* Heritage Grain Overlay */}
-                        <div className="absolute inset-0 pointer-events-none opacity-[0.04] mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')]" />
+                        <div className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')]" />
                     </div>
-                    <p className="mt-4 text-[11px] uppercase tracking-widest text-gray-400 font-bold text-center lg:text-right">A Family Legacy · Built on Trust</p>
+                    <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold text-center lg:text-right leading-tight">A Family Legacy · Built on Trust</p>
                 </div>
             </div>
 
