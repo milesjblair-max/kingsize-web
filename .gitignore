@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Source product image folders (processed copies live in public/images/)
+"ZIp Polo's 2025"/
+"Zip Short's 2025"/
+"Zip T-shirts 2025"/
+kingsize_logo_transparent_3000.2.png
