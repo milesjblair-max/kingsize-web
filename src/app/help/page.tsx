@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HelpTabs } from "@/features/help/HelpTabs";
 import {
     User, Package, Truck,
@@ -37,9 +37,50 @@ const HELP_CATEGORIES = [
         title: "Delivery",
         icon: Truck,
         faqs: [
-            { q: "How much is shipping?", a: "Standard shipping is $10. Express shipping is $15. Free shipping on orders over $150." },
-            { q: "Do you ship internationally?", a: "Yes, we ship to New Zealand and selected international locations." },
-            { q: "How long does delivery take?", a: "Standard delivery takes 3-7 business days. Express is 1-3 business days." },
+            {
+                q: "How long does delivery take?",
+                a: (
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>Fulfillment typically takes up to 3 business days.</li>
+                        <li>Regular Post: 5 to 10 business days from dispatch.</li>
+                        <li>Express Post: 1 to 3 business days from dispatch.</li>
+                        <li>Remote areas may require additional time.</li>
+                    </ul>
+                )
+            },
+            {
+                q: "What are the shipping costs?",
+                a: (
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>Regular Post (Australia Post): $14.95</li>
+                        <li>Express Post (StarTrack): $19.50</li>
+                    </ul>
+                )
+            },
+            {
+                q: "Can I track my order?",
+                a: "A tracking link will be emailed to you once your order is dispatched. Regular shipping can be tracked via the MyPost app. Note: New Zealand orders over 2kg cannot be tracked."
+            },
+            {
+                q: "Do you deliver internationally?",
+                a: "We ship to over 170 countries. We deliver to PO Boxes within Australia and selected international locations including Bahrain, Jordan, Kuwait, Qatar, Saudi Arabia, and UAE."
+            },
+            {
+                q: "Can I change my delivery address?",
+                a: "Please verify your address on your confirmation email immediately. We are unable to redirect orders once they have been dispatched."
+            },
+            {
+                q: "Do I need to sign for delivery?",
+                a: "You may select 'Authority to Leave' (ATL) to have the parcel left in a safe place. Couriers reserve the right to hold parcels if no safe place is available."
+            },
+            {
+                q: "Can I add items to my order?",
+                a: "Contact us immediately if you need to add items. If not yet dispatched, we may be able to add items, though this may delay fulfillment. Orders cannot be combined or modified once dispatched."
+            },
+            {
+                q: "What happens after I place my order?",
+                a: "You will receive an automated confirmation email, followed by updates during fulfillment and dispatch. If an item is unavailable, we will contact you to offer an alternative or a refund."
+            },
         ]
     },
     {
@@ -110,6 +151,11 @@ const HELP_CATEGORIES = [
 export default function HelpPage() {
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
+
+    // Reset expanded state when category changes
+    useEffect(() => {
+        setExpandedQuestion(null);
+    }, [activeCategory]);
 
     const category = HELP_CATEGORIES.find(c => c.id === activeCategory);
 
@@ -192,24 +238,34 @@ export default function HelpPage() {
                                 {category?.title}
                             </h2>
 
-                            <div className="space-y-4">
-                                {category?.faqs.map((faq, idx) => (
-                                    <div key={idx} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-                                        <button
-                                            onClick={() => setExpandedQuestion(expandedQuestion === idx ? null : idx)}
-                                            className="flex justify-between items-center w-full text-left font-bold text-gray-900 hover:text-black py-2"
-                                        >
-                                            <span className="pr-4">{faq.q}</span>
-                                            {expandedQuestion === idx ? <ChevronUp size={20} className="flex-shrink-0" /> : <ChevronDown size={20} className="flex-shrink-0" />}
-                                        </button>
+                            <div className="space-y-2">
+                                {category?.faqs.map((faq, idx) => {
+                                    const isOpen = expandedQuestion === idx;
+                                    return (
+                                        <div key={idx} className="border-b border-gray-100 last:border-0">
+                                            <button
+                                                onClick={() => setExpandedQuestion(isOpen ? null : idx)}
+                                                className="flex justify-between items-center w-full text-left py-4 group focus:outline-none"
+                                            >
+                                                <span className={`pr-4 text-base transition-colors ${isOpen ? 'text-black font-semibold' : 'text-gray-900 font-medium group-hover:text-black'}`}>
+                                                    {faq.q}
+                                                </span>
+                                                <ChevronDown
+                                                    size={18}
+                                                    className={`flex-shrink-0 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-black' : ''}`}
+                                                />
+                                            </button>
 
-                                        {expandedQuestion === idx && (
-                                            <div className="mt-2 text-gray-600 text-sm leading-relaxed animate-in fade-in slide-in-from-top-1 duration-200">
-                                                {faq.a}
+                                            <div
+                                                className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[500px] pb-6 opacity-100' : 'max-h-0 opacity-0'}`}
+                                            >
+                                                <div className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+                                                    {faq.a}
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
