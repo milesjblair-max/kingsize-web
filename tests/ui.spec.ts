@@ -18,6 +18,7 @@ const PAGES = [
     { name: "help", path: "/help" },
     { name: "contact", path: "/contact" },
     { name: "new-in", path: "/new-in" },
+    { name: "experience", path: "/experience" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

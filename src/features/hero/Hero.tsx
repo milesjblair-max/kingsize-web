@@ -88,7 +88,7 @@ export const Hero = () => {
 
                 {/* Micro CTA */}
                 <a
-                    href="#new-arrivals"
+                    href="/experience"
                     className="mt-3 inline-block text-sm font-medium tracking-wide hover:opacity-100 transition-opacity"
                     style={{
                         color: "#C9A96E",
