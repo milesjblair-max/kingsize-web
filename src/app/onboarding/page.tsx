@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/features/auth/AuthContext";
 import { getRandomCards } from "@/features/auth/swipeCards";
@@ -666,22 +666,37 @@ const StepAnalysis = ({
 
 const TOTAL_STEPS = 6;
 
-export default function OnboardingPage() {
+function OnboardingContent() {
     const { profile, saveProfile, savePreferences } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
-    const [step, setStep] = useState(1);
+    const isRedo = searchParams.get("redo") === "true";
+    const returnTo = searchParams.get("returnTo") ?? "/account";
 
-    // Step state
+    // In redo mode, skip to step 5 and pre-populate from existing profile
+    const [step, setStep] = useState(() => (isRedo ? 5 : 1));
+
     const [basics, setBasics] = useState<BasicsData>({
         firstName: profile?.firstName ?? "",
         lastName: profile?.lastName ?? "",
         email: profile?.email ?? "",
         mobile: profile?.mobile ?? "",
     });
-    const [fitType, setFitType] = useState<FitType | "">("");
-    const [dimensions, setDimensions] = useState<Dimensions>({ neck: "", sleeve: "", waist: "", inseam: "", shoeSize: "", fitPref: "" });
-    const [contactPref, setContactPref] = useState<ContactPref | "">("");
+    const [fitType, setFitType] = useState<FitType | "">(
+        isRedo ? (profile?.fitType ?? "") : ""
+    );
+    const [dimensions, setDimensions] = useState<Dimensions>({
+        neck: profile?.dimensions?.neck ?? "",
+        sleeve: profile?.dimensions?.sleeve ?? "",
+        waist: profile?.dimensions?.waist ?? "",
+        inseam: profile?.dimensions?.inseam ?? "",
+        shoeSize: profile?.dimensions?.shoeSize ?? "",
+        fitPref: profile?.dimensions?.fitPref ?? "",
+    });
+    const [contactPref, setContactPref] = useState<ContactPref | "">(
+        isRedo ? (profile?.contactPref ?? "") : ""
+    );
     const [swipeCards] = useState(() => getRandomCards(10));
     const [liked, setLiked] = useState<SwipeCard[]>([]);
     const [passed, setPassed] = useState<SwipeCard[]>([]);
@@ -690,35 +705,48 @@ export default function OnboardingPage() {
     const handlePass = (card: SwipeCard) => setPassed((p) => [...p, card]);
 
     const handleAnalysisComplete = (prefs: StylePreferences) => {
-        // Build the full profile
-        const fullProfile: UserProfile = {
-            firstName: basics.firstName,
-            lastName: basics.lastName,
-            email: basics.email,
-            mobile: basics.mobile || undefined,
-            fitType: fitType as FitType,
-            dimensions: {
-                neck: dimensions.neck || undefined,
-                sleeve: dimensions.sleeve || undefined,
-                waist: dimensions.waist || undefined,
-                inseam: dimensions.inseam || undefined,
-                shoeSize: dimensions.shoeSize || undefined,
-                fitPref: dimensions.fitPref || undefined,
-            },
-            contactPref: contactPref as ContactPref,
-            onboardingComplete: true,
-            createdAt: profile?.createdAt ?? new Date().toISOString(),
-        };
-
-        saveProfile(fullProfile);
-        savePreferences(prefs);
-        router.push("/account");
+        if (isRedo && profile) {
+            // Redo mode: update only preferences, keep existing profile
+            savePreferences(prefs);
+        } else {
+            // Full onboarding: save complete profile
+            const fullProfile: UserProfile = {
+                firstName: basics.firstName,
+                lastName: basics.lastName,
+                email: basics.email,
+                mobile: basics.mobile || undefined,
+                fitType: fitType as FitType,
+                dimensions: {
+                    neck: dimensions.neck || undefined,
+                    sleeve: dimensions.sleeve || undefined,
+                    waist: dimensions.waist || undefined,
+                    inseam: dimensions.inseam || undefined,
+                    shoeSize: dimensions.shoeSize || undefined,
+                    fitPref: dimensions.fitPref || undefined,
+                },
+                contactPref: contactPref as ContactPref,
+                onboardingComplete: true,
+                createdAt: profile?.createdAt ?? new Date().toISOString(),
+            };
+            saveProfile(fullProfile);
+            savePreferences(prefs);
+        }
+        router.push(returnTo);
     };
+
+    // In redo mode, show a simpler header
+    const redoHeader = isRedo && (
+        <div className="mb-6 pb-4 border-b border-gray-100">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Style swipes</p>
+            <h2 className="text-lg font-bold text-gray-900">Redo your style picks</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Your profile and measurements are unchanged.</p>
+        </div>
+    );
 
     return (
         <div className="min-h-[90vh] bg-gray-50 py-12 px-4">
             <div className="max-w-md mx-auto bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-                <ProgressBar step={step} total={TOTAL_STEPS} />
+                {isRedo ? redoHeader : <ProgressBar step={step} total={TOTAL_STEPS} />}
 
                 {step === 1 && (
                     <StepBasics data={basics} onChange={setBasics} onNext={() => setStep(2)} />
@@ -740,12 +768,12 @@ export default function OnboardingPage() {
                         onLike={handleLike}
                         onPass={handlePass}
                         onNext={() => setStep(6)}
-                        onBack={() => setStep(4)}
+                        onBack={isRedo ? () => router.push(returnTo) : () => setStep(4)}
                     />
                 )}
                 {step === 6 && (
                     <StepAnalysis
-                        fitType={fitType as FitType}
+                        fitType={(fitType || profile?.fitType || "big") as FitType}
                         dimensions={dimensions}
                         liked={liked}
                         passed={passed}
@@ -754,5 +782,17 @@ export default function OnboardingPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function OnboardingPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
+            </div>
+        }>
+            <OnboardingContent />
+        </Suspense>
     );
 }
