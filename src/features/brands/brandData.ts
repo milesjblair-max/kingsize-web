@@ -14,29 +14,30 @@ export interface Brand {
 }
 
 export const BRANDS: Brand[] = [
-    // ── Popular (likely logos found) ──────────────────────────────────────────
-    { id: "hugo-boss", name: "Hugo Boss", slug: "hugo-boss", logoFile: "hugo-boss.png", href: "/brands/hugo-boss", popular: true },
-    { id: "nautica", name: "Nautica", slug: "nautica", logoFile: "nautica.png", href: "/brands/nautica", popular: true },
-    { id: "ben-sherman", name: "Ben Sherman", slug: "ben-sherman", logoFile: "ben-sherman.png", href: "/brands/ben-sherman", popular: true },
-    { id: "levis", name: "Levi's", slug: "levis", logoFile: "levis.png", href: "/brands/levis", popular: true },
-    { id: "calvin-klein", name: "Calvin Klein", slug: "calvin-klein", logoFile: "calvin-klein.png", href: "/brands/calvin-klein", popular: true },
-    { id: "jack-jones", name: "Jack & Jones", slug: "jack-jones", logoFile: "jack-jones.png", href: "/brands/jack-jones", popular: true },
-    { id: "new-balance", name: "New Balance", slug: "new-balance", logoFile: "new-balance.png", href: "/brands/new-balance", popular: true },
-    { id: "skechers", name: "Skechers", slug: "skechers", logoFile: "skechers.png", href: "/brands/skechers", popular: true },
-    { id: "vans", name: "Vans", slug: "vans", logoFile: "vans.png", href: "/brands/vans", popular: true },
-    { id: "dickies", name: "Dickies", slug: "dickies", logoFile: "dickies.png", href: "/brands/dickies", popular: true },
-    { id: "jockey", name: "Jockey", slug: "jockey", logoFile: "jockey.png", href: "/brands/jockey", popular: true },
-    { id: "keen", name: "Keen", slug: "keen", logoFile: "keen.png", href: "/brands/keen", popular: true },
-    { id: "north-56", name: "North 56", slug: "north-56", logoFile: "north-56.png", href: "/brands/north-56", popular: true },
-    { id: "raging-bull", name: "Raging Bull", slug: "raging-bull", logoFile: "raging-bull.png", href: "/brands/raging-bull", popular: true },
-    { id: "doc-martens", name: "Doc Martens", slug: "doc-martens", logoFile: "doc-martens.png", href: "/brands/doc-martens", popular: true },
+    // ── Popular brands ────────────────────────────────────────────────────────
+    { id: "hugo-boss", name: "Hugo Boss", slug: "hugo-boss", logoFile: null, href: "/brands/hugo-boss", popular: true },
+    { id: "nautica", name: "Nautica", slug: "nautica", logoFile: null, href: "/brands/nautica", popular: true },
+    { id: "ben-sherman", name: "Ben Sherman", slug: "ben-sherman", logoFile: null, href: "/brands/ben-sherman", popular: true },
+    { id: "levis", name: "Levi's", slug: "levis", logoFile: null, href: "/brands/levis", popular: true },
+    { id: "calvin-klein", name: "Calvin Klein", slug: "calvin-klein", logoFile: null, href: "/brands/calvin-klein", popular: true },
+    { id: "jack-jones", name: "Jack & Jones", slug: "jack-jones", logoFile: null, href: "/brands/jack-jones", popular: true },
+    { id: "new-balance", name: "New Balance", slug: "new-balance", logoFile: null, href: "/brands/new-balance", popular: true },
+    { id: "skechers", name: "Skechers", slug: "skechers", logoFile: null, href: "/brands/skechers", popular: true },
+    { id: "vans", name: "Vans", slug: "vans", logoFile: null, href: "/brands/vans", popular: true },
+    { id: "dickies", name: "Dickies", slug: "dickies", logoFile: null, href: "/brands/dickies", popular: true },
+    { id: "jockey", name: "Jockey", slug: "jockey", logoFile: null, href: "/brands/jockey", popular: true },
+    { id: "keen", name: "Keen", slug: "keen", logoFile: null, href: "/brands/keen", popular: true },
+    { id: "north-56", name: "North 56", slug: "north-56", logoFile: null, href: "/brands/north-56", popular: true },
+    { id: "raging-bull", name: "Raging Bull", slug: "raging-bull", logoFile: null, href: "/brands/raging-bull", popular: true },
+    { id: "doc-martens", name: "Doc Martens", slug: "doc-martens", logoFile: null, href: "/brands/doc-martens", popular: true },
 
-    // ── Additional (with attempted logos) ────────────────────────────────────
-    { id: "daniel-hechter", name: "Daniel Hechter", slug: "daniel-hechter", logoFile: "daniel-hechter.png", href: "/brands/daniel-hechter", popular: false },
-    { id: "rembrandt", name: "Rembrandt", slug: "rembrandt", logoFile: "rembrandt.png", href: "/brands/rembrandt", popular: false },
-    { id: "mustang", name: "Mustang", slug: "mustang", logoFile: "mustang.png", href: "/brands/mustang", popular: false },
-    { id: "olukai", name: "Olukai", slug: "olukai", logoFile: "olukai.png", href: "/brands/olukai", popular: false },
-    { id: "rossi", name: "Rossi", slug: "rossi", logoFile: "rossi.png", href: "/brands/rossi", popular: false },
+    // ── Additional brands ─────────────────────────────────────────────────────
+    { id: "daniel-hechter", name: "Daniel Hechter", slug: "daniel-hechter", logoFile: null, href: "/brands/daniel-hechter", popular: false },
+    { id: "rembrandt", name: "Rembrandt", slug: "rembrandt", logoFile: null, href: "/brands/rembrandt", popular: false },
+    { id: "mustang", name: "Mustang", slug: "mustang", logoFile: null, href: "/brands/mustang", popular: false },
+    { id: "olukai", name: "Olukai", slug: "olukai", logoFile: null, href: "/brands/olukai", popular: false },
+    { id: "rossi", name: "Rossi", slug: "rossi", logoFile: null, href: "/brands/rossi", popular: false },
+
 
     // ── Text-only brands (logos not publicly available) ──────────────────────
     { id: "gaz-man", name: "Gaz Man", slug: "gaz-man", logoFile: null, href: "/brands/gaz-man", popular: false },
