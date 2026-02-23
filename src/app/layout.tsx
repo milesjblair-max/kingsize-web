@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 
 import { Navigation } from "@/features/navigation/Navigation";
 import { FitProvider } from "@/features/fit/FitContext";
+import { AuthProvider } from "@/features/auth/AuthContext";
 
 export default function RootLayout({
   children,
@@ -30,10 +31,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <FitProvider>
-          <Navigation />
-          {children}
-        </FitProvider>
+        <AuthProvider>
+          <FitProvider>
+            <Navigation />
+            {children}
+          </FitProvider>
+        </AuthProvider>
       </body>
     </html>
   );

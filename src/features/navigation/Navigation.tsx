@@ -3,13 +3,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { CategoryBar } from "./CategoryBar";
 import { FitStrip } from "@/features/fit/FitStrip";
 import { useFit, FitOption } from "@/features/fit/FitContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import {
     Truck, RotateCcw, Tag, Search, Menu, X,
     Info, HelpCircle, Phone, User, ShoppingBag,
-    ChevronDown, Package, RotateCcw as ReturnIcon, LifeBuoy,
+    ChevronDown, LogOut, Package, RotateCcw as ReturnIcon, LifeBuoy,
 } from "lucide-react";
 
 // ─── Rotating messages ────────────────────────────────────────────────────────
@@ -110,6 +112,8 @@ const AccountDropdown = () => {
     const [open, setOpen] = useState(false);
     const wrapRef = useRef<HTMLDivElement>(null);
     const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const { isAuthenticated, profile, logout } = useAuth();
+    const router = useRouter();
 
     const openDrop = useCallback(() => {
         if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -119,7 +123,6 @@ const AccountDropdown = () => {
         closeTimer.current = setTimeout(() => setOpen(false), 120);
     }, []);
 
-    // ESC to close
     useEffect(() => {
         if (!open) return;
         const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
@@ -127,7 +130,6 @@ const AccountDropdown = () => {
         return () => document.removeEventListener("keydown", handler);
     }, [open]);
 
-    // Click-outside for mobile
     useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
@@ -136,14 +138,14 @@ const AccountDropdown = () => {
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
+    const handleLogout = () => {
+        logout();
+        setOpen(false);
+        router.push("/");
+    };
+
     return (
-        <div
-            ref={wrapRef}
-            className="relative"
-            onMouseEnter={openDrop}
-            onMouseLeave={schedulClose}
-        >
-            {/* Trigger */}
+        <div ref={wrapRef} className="relative" onMouseEnter={openDrop} onMouseLeave={schedulClose}>
             <button
                 id="account-trigger"
                 aria-haspopup="true"
@@ -152,22 +154,14 @@ const AccountDropdown = () => {
                 onClick={() => setOpen((v) => !v)}
                 className="group flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-gray-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded px-0.5"
             >
-                <User
-                    size={16}
-                    strokeWidth={1.8}
-                    className="transition-colors"
-                    style={{ color: "rgba(55,65,81,0.75)" }}
-                />
-                <span className="hidden xl:inline">Account</span>
-                <ChevronDown
-                    size={13}
-                    strokeWidth={2}
-                    className="hidden xl:block transition-transform"
-                    style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-                />
+                <User size={16} strokeWidth={1.8} className="transition-colors" style={{ color: "rgba(55,65,81,0.75)" }} />
+                <span className="hidden xl:inline">
+                    {isAuthenticated && profile?.firstName ? profile.firstName : "Account"}
+                </span>
+                <ChevronDown size={13} strokeWidth={2} className="hidden xl:block transition-transform"
+                    style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
             </button>
 
-            {/* Dropdown panel */}
             {open && (
                 <div
                     id="account-dropdown"
@@ -182,7 +176,6 @@ const AccountDropdown = () => {
                         borderRadius: 12,
                         boxShadow: "0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
                         padding: "10px",
-                        // Smooth appear
                         animation: "dropIn 0.15s ease",
                     }}
                 >
@@ -193,50 +186,69 @@ const AccountDropdown = () => {
                         }
                     `}</style>
 
-                    {/* Sign in button */}
-                    <Link
-                        href="/account/login"
-                        role="menuitem"
-                        className="block w-full text-center py-2.5 mb-2 rounded-lg text-sm font-bold transition-colors"
-                        style={{ background: "#0E1A2B", color: "#fff" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#1a2e4a")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "#0E1A2B")}
-                    >
-                        Sign in
-                    </Link>
-
-                    {/* Register link */}
-                    <Link
-                        href="/account/register"
-                        role="menuitem"
-                        className="block w-full text-center py-1.5 mb-2 rounded-lg text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-colors"
-                    >
-                        Register — in a snap
-                    </Link>
-
-                    {/* Divider */}
-                    <div className="border-t border-gray-100 my-2" />
-
-                    {/* Menu items */}
-                    {ACCOUNT_ITEMS.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                            <Link
-                                key={item.label}
-                                href={item.href}
-                                role="menuitem"
-                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors group"
+                    {isAuthenticated ? (
+                        <>
+                            {/* Logged-in header */}
+                            <div className="px-3 py-2 mb-2">
+                                <p className="text-sm font-bold text-gray-900">
+                                    {profile?.firstName} {profile?.lastName}
+                                </p>
+                                <p className="text-xs text-gray-400 truncate">{profile?.email}</p>
+                            </div>
+                            <div className="border-t border-gray-100 my-2" />
+                            {ACCOUNT_ITEMS.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <Link key={item.label} href={item.href} role="menuitem"
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                                        onClick={() => setOpen(false)}
+                                    >
+                                        <Icon size={15} strokeWidth={1.8} className="flex-shrink-0" style={{ color: "rgba(55,65,81,0.6)" }} />
+                                        {item.label}
+                                    </Link>
+                                );
+                            })}
+                            <div className="border-t border-gray-100 my-2" />
+                            <button role="menuitem" onClick={handleLogout}
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors w-full text-left"
                             >
-                                <Icon
-                                    size={15}
-                                    strokeWidth={1.8}
-                                    className="flex-shrink-0"
-                                    style={{ color: "rgba(55,65,81,0.6)" }}
-                                />
-                                {item.label}
+                                <LogOut size={15} strokeWidth={1.8} style={{ color: "rgba(55,65,81,0.5)" }} />
+                                Sign out
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <Link href="/login" role="menuitem"
+                                className="block w-full text-center py-2.5 mb-2 rounded-lg text-sm font-bold transition-colors"
+                                style={{ background: "#0E1A2B", color: "#fff" }}
+                                onClick={() => setOpen(false)}
+                            >
+                                Sign in
                             </Link>
-                        );
-                    })}
+                            <Link href="/login" role="menuitem"
+                                className="block w-full text-center py-1.5 mb-2 rounded-lg text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-colors"
+                                onClick={() => setOpen(false)}
+                            >
+                                Create account
+                            </Link>
+                            <div className="border-t border-gray-100 my-2" />
+                            {[
+                                { label: "Help and contact", href: "/help", icon: LifeBuoy },
+                                { label: "Return an item", href: "/help/returns-policy", icon: ReturnIcon },
+                            ].map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <Link key={item.label} href={item.href} role="menuitem"
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                        onClick={() => setOpen(false)}
+                                    >
+                                        <Icon size={15} strokeWidth={1.8} style={{ color: "rgba(55,65,81,0.6)" }} />
+                                        {item.label}
+                                    </Link>
+                                );
+                            })}
+                        </>
+                    )}
                 </div>
             )}
         </div>
@@ -267,6 +279,66 @@ const NavLink = ({
         </span>
     </Link>
 );
+
+// ─── Mobile menu footer (auth-aware) ─────────────────────────────────────────
+const MobileMenuFooter = ({ onClose }: { onClose: () => void }) => {
+    const { isAuthenticated, profile, logout } = useAuth();
+    const router = useRouter();
+
+    const handleLogout = () => {
+        logout();
+        onClose();
+        router.push("/");
+    };
+
+    if (isAuthenticated) {
+        return (
+            <div className="px-5 space-y-1 border-t border-gray-100 pt-4 pb-6">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Account</p>
+                <p className="text-sm font-bold text-gray-900 mb-1">{profile?.firstName} {profile?.lastName}</p>
+                {[
+                    { label: "Your account", href: "/account", Icon: User },
+                    { label: "Help", href: "/help", Icon: HelpCircle },
+                    { label: "Contact", href: "/contact", Icon: Phone },
+                ].map(({ label, href, Icon }) => (
+                    <Link key={label} href={href} onClick={onClose} className="flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 py-2">
+                        <Icon size={15} strokeWidth={1.8} style={{ color: "rgba(55,65,81,0.6)" }} />
+                        {label}
+                    </Link>
+                ))}
+                <button onClick={handleLogout} className="flex items-center gap-3 text-sm text-gray-500 hover:text-gray-800 py-2 w-full">
+                    <LogOut size={15} strokeWidth={1.8} style={{ color: "rgba(55,65,81,0.5)" }} />
+                    Sign out
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="px-5 space-y-1 border-t border-gray-100 pt-4 pb-6">
+            <Link href="/login" onClick={onClose}
+                className="block w-full text-center py-2.5 mb-2 rounded-md text-sm font-bold bg-gray-900 text-white"
+            >
+                Sign in
+            </Link>
+            <Link href="/login" onClick={onClose}
+                className="block w-full text-center py-2 text-sm text-gray-500 hover:text-gray-800"
+            >
+                Create account
+            </Link>
+            {[
+                { label: "About Us", href: "/about", Icon: Info },
+                { label: "Help", href: "/help", Icon: HelpCircle },
+                { label: "Contact", href: "/contact", Icon: Phone },
+            ].map(({ label, href, Icon }) => (
+                <Link key={label} href={href} onClick={onClose} className="flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 py-2">
+                    <Icon size={15} strokeWidth={1.8} style={{ color: "rgba(55,65,81,0.6)" }} />
+                    {label}
+                </Link>
+            ))}
+        </div>
+    );
+};
 
 // ─── Mobile menu ──────────────────────────────────────────────────────────────
 const FIT_PILLS: { key: FitOption; label: string }[] = [
@@ -331,19 +403,7 @@ const MobileMenu = ({ open, onClose }: { open: boolean; onClose: () => void }) =
                         ))}
                     </div>
 
-                    <div className="px-5 space-y-3 border-t border-gray-100 pt-4 pb-6">
-                        {[
-                            { label: "About Us", href: "/about", Icon: Info },
-                            { label: "Help", href: "/help", Icon: HelpCircle },
-                            { label: "Contact", href: "/contact", Icon: Phone },
-                            { label: "Sign in", href: "/account/login", Icon: User },
-                        ].map(({ label, href, Icon }) => (
-                            <Link key={label} href={href} className="flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 py-1">
-                                <Icon size={15} strokeWidth={1.8} style={{ color: "rgba(55,65,81,0.6)" }} />
-                                {label}
-                            </Link>
-                        ))}
-                    </div>
+                    <MobileMenuFooter onClose={onClose} />
                 </nav>
             </div>
         </div>

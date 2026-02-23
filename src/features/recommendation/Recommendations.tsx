@@ -4,11 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, User } from "lucide-react";
+import { useAuth } from "@/features/auth/AuthContext";
 
-// ─── Config ──────────────────────────────────────────────────────────────────
-
-// Simulate auth state — swap to real auth hook when ready
-const IS_LOGGED_IN = false;
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 const STYLE_TILES = [
     {
@@ -144,12 +142,18 @@ const SignUpNudge = () => (
             </div>
         </div>
         <div className="flex items-center gap-4">
-            <button className="h-9 px-5 bg-gray-900 text-white text-sm font-bold rounded-sm hover:bg-black transition-colors">
+            <Link
+                href="/login"
+                className="h-9 px-5 bg-gray-900 text-white text-sm font-bold rounded-sm hover:bg-black transition-colors flex items-center"
+            >
                 Create account
-            </button>
-            <button className="text-sm font-medium text-gray-600 hover:text-black transition-colors underline underline-offset-2">
-                Log in
-            </button>
+            </Link>
+            <Link
+                href="/login"
+                className="text-sm font-medium text-gray-600 hover:text-black transition-colors underline underline-offset-2"
+            >
+                Sign in
+            </Link>
         </div>
     </div>
 );
@@ -193,6 +197,12 @@ const BundleCard = ({ bundle }: { bundle: typeof BUNDLES[number] }) => (
 
 export const Recommendations = () => {
     const [, setHovered] = useState<string | null>(null);
+    const { isAuthenticated, profile, preferences } = useAuth();
+
+    const fitLabel = profile?.fitType === "big" ? "Big"
+        : profile?.fitType === "tall" ? "Tall"
+            : profile?.fitType === "big-tall" ? "Big and Tall"
+                : null;
 
     return (
         <section className="px-6 py-12 max-w-[1400px] mx-auto">
@@ -211,7 +221,7 @@ export const Recommendations = () => {
                 </Link>
             </div>
 
-            {/* Style tiles — 5-across desktop, 2-col tablet, 1-col mobile */}
+            {/* Style tiles */}
             <div
                 className="grid gap-3 mb-8"
                 style={{ gridTemplateColumns: "repeat(5, 1fr)" }}
@@ -231,16 +241,30 @@ export const Recommendations = () => {
             </div>
 
             {/* Bottom row: auth state determines content */}
-            {IS_LOGGED_IN ? (
+            {isAuthenticated ? (
                 <div>
-                    <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">
-                        Picked for your fit
-                    </p>
+                    <div className="flex items-center gap-3 mb-4">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">
+                            Picked for your fit{fitLabel ? ` — ${fitLabel}` : ""}
+                        </p>
+                        {preferences?.styleTags && preferences.styleTags.length > 0 && (
+                            <div className="flex gap-1.5 flex-wrap">
+                                {preferences.styleTags.slice(0, 3).map((t) => (
+                                    <span key={t} className="text-[10px] bg-gray-900 text-white px-2 py-0.5 rounded-full font-medium capitalize">
+                                        {t}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {BUNDLES.map((bundle) => (
                             <BundleCard key={bundle.id} bundle={bundle} />
                         ))}
                     </div>
+                    {preferences?.summary && (
+                        <p className="text-xs text-gray-400 mt-4 italic">{preferences.summary}</p>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
