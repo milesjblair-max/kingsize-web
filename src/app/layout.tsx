@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { Navigation } from "@/features/navigation/Navigation";
+import { FitProvider } from "@/features/fit/FitContext";
 
 export default function RootLayout({
   children,
@@ -29,8 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navigation />
-        {children}
+        <FitProvider>
+          <Navigation />
+          {children}
+        </FitProvider>
       </body>
     </html>
   );

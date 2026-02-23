@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CategoryBar } from "./CategoryBar";
+import { FitStrip } from "@/features/fit/FitStrip";
+import { useFit, FitOption } from "@/features/fit/FitContext";
 import {
     Truck, RotateCcw, Tag, Search, Menu, X,
     Info, HelpCircle, Phone, User, ShoppingBag,
@@ -267,7 +269,14 @@ const NavLink = ({
 );
 
 // ─── Mobile menu ──────────────────────────────────────────────────────────────
+const FIT_PILLS: { key: FitOption; label: string }[] = [
+    { key: "big", label: "Big" },
+    { key: "tall", label: "Tall" },
+    { key: "big-tall", label: "Big and Tall" },
+];
+
 const MobileMenu = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+    const { fit, setFit } = useFit();
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-[200] flex">
@@ -277,13 +286,52 @@ const MobileMenu = ({ open, onClose }: { open: boolean; onClose: () => void }) =
                     <span className="font-bold text-gray-900">Menu</span>
                     <button onClick={onClose} aria-label="Close menu"><X size={20} /></button>
                 </div>
-                <nav className="flex-1 overflow-y-auto px-5 py-4">
-                    {["New In", "Casual Wear", "Smart & Formal", "Active & Sport", "Footwear", "Essentials"].map((cat) => (
-                        <a key={cat} href="#" className="block py-3 text-sm font-bold border-b border-gray-50 text-gray-800 hover:text-orange-600">
-                            {cat}
-                        </a>
-                    ))}
-                    <div className="mt-6 space-y-3 border-t border-gray-100 pt-4">
+                <nav className="flex-1 overflow-y-auto">
+                    {/* Shop by Fit section */}
+                    <div className="px-5 py-4 border-b border-gray-100">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Shop by Fit</p>
+                        <div className="flex flex-wrap gap-2">
+                            {FIT_PILLS.map(({ key, label }) => {
+                                const isActive = fit === key;
+                                return (
+                                    <button
+                                        key={key}
+                                        onClick={() => setFit(fit === key ? null : key)}
+                                        aria-pressed={isActive}
+                                        style={{
+                                            height: 30,
+                                            padding: "0 14px",
+                                            borderRadius: 5,
+                                            border: isActive ? "1px solid #111" : "1px solid #D1D5DB",
+                                            background: isActive ? "#111" : "#fff",
+                                            color: isActive ? "#fff" : "#374151",
+                                            fontSize: 13,
+                                            fontWeight: isActive ? 700 : 500,
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        {label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {fit && (
+                            <p className="text-xs text-gray-400 mt-2">
+                                Showing {fit === "big" ? "Big" : fit === "tall" ? "Tall" : "Big and Tall"} products
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Category links */}
+                    <div className="px-5 py-3">
+                        {["New In", "Casual Wear", "Smart & Formal", "Active & Sport", "Footwear", "Essentials"].map((cat) => (
+                            <a key={cat} href="#" className="block py-3 text-sm font-bold border-b border-gray-50 text-gray-800 hover:text-black">
+                                {cat}
+                            </a>
+                        ))}
+                    </div>
+
+                    <div className="px-5 space-y-3 border-t border-gray-100 pt-4 pb-6">
                         {[
                             { label: "About Us", href: "/about", Icon: Info },
                             { label: "Help", href: "/help", Icon: HelpCircle },
@@ -393,6 +441,9 @@ export const Navigation = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Fit Strip — all screens, sits between header and category nav */}
+                <FitStrip />
 
                 {/* Category bar — desktop only */}
                 <div className="hidden md:block">
