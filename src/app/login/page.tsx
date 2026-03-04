@@ -50,15 +50,28 @@ const btnSecondary: React.CSSProperties = {
 const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim()) { setError("Please enter your email"); return; }
-        const result = await login(email.trim().toLowerCase());
-        if (result.success) {
-            router.push(result.needsOnboarding ? "/onboarding" : "/account");
+
+        setLoading(true);
+        setError("");
+
+        try {
+            const result = await login(email.trim().toLowerCase());
+            if (result.success) {
+                router.push(result.needsOnboarding ? "/onboarding" : "/account");
+            } else {
+                setError(result.error || "Login failed");
+            }
+        } catch (err) {
+            setError("An unexpected error occurred");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -83,10 +96,10 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
             <p className="text-xs text-gray-400 text-center">
                 Demo mode: any email will sign you in
             </p>
-            <button type="submit" style={btnPrimary}>
-                Sign in
+            <button type="submit" style={btnPrimary} disabled={loading}>
+                {loading ? "Signing in..." : "Sign in"}
             </button>
-            <button type="button" style={btnSecondary} onClick={onSwitch}>
+            <button type="button" style={btnSecondary} onClick={onSwitch} disabled={loading}>
                 Create an account instead
             </button>
         </form>
@@ -98,15 +111,28 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
 const RegisterForm = ({ onSwitch }: { onSwitch: () => void }) => {
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const { createAccount } = useAuth();
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim()) { setError("Please enter a valid email"); return; }
-        const result = await createAccount(email.trim().toLowerCase());
-        if (result.success) {
-            router.push("/onboarding");
+
+        setLoading(true);
+        setError("");
+
+        try {
+            const result = await createAccount(email.trim().toLowerCase());
+            if (result.success) {
+                router.push("/onboarding");
+            } else {
+                setError(result.error || "Failed to create account");
+            }
+        } catch (err) {
+            setError("An unexpected error occurred");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -131,10 +157,10 @@ const RegisterForm = ({ onSwitch }: { onSwitch: () => void }) => {
             <p className="text-xs text-gray-400 text-center">
                 You will be taken through a short style setup
             </p>
-            <button type="submit" style={btnPrimary}>
-                Create account and set up my profile
+            <button type="submit" style={btnPrimary} disabled={loading}>
+                {loading ? "Creating account..." : "Create account and set up my profile"}
             </button>
-            <button type="button" style={btnSecondary} onClick={onSwitch}>
+            <button type="button" style={btnSecondary} onClick={onSwitch} disabled={loading}>
                 Already have an account? Sign in
             </button>
         </form>

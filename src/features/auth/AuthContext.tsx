@@ -54,8 +54,8 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-    login: (email: string) => Promise<{ success: boolean; needsOnboarding: boolean }>;
-    createAccount: (email: string) => Promise<{ success: boolean }>;
+    login: (email: string) => Promise<{ success: boolean; needsOnboarding: boolean; error?: string }>;
+    createAccount: (email: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => Promise<void>;
     saveProfile: (profile: UserProfile) => Promise<void>;
     savePreferences: (prefs: StylePreferences) => void;
@@ -101,25 +101,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Login / create account — posts to server, which sets an httpOnly session cookie
     const login = useCallback(async (email: string) => {
-        const res = await fetch("/api/gateway/customer/session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
-        });
-        const data = await res.json();
-        if (data.success) {
-            // Reload profile from server
-            const sessionRes = await fetch("/api/gateway/customer/session");
-            const sessionData = await sessionRes.json();
-            setState({ isAuthenticated: true, profile: sessionData.profile, preferences: null, loading: false });
-            return { success: true, needsOnboarding: data.needsOnboarding };
+        try {
+            const res = await fetch("/api/gateway/customer/session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // Reload profile from server to ensure session is active
+                const sessionRes = await fetch("/api/gateway/customer/session");
+                const sessionData = await sessionRes.json();
+
+                if (sessionData.authenticated) {
+                    setState({ isAuthenticated: true, profile: sessionData.profile, preferences: null, loading: false });
+                    return { success: true, needsOnboarding: data.needsOnboarding };
+                }
+                return { success: false, error: "Session synchronization failed. Please try again.", needsOnboarding: false };
+            }
+            return { success: false, error: data.error || "Login failed", needsOnboarding: false };
+        } catch (err) {
+            console.error("[auth] login error", err);
+            return { success: false, error: "An unexpected error occurred", needsOnboarding: false };
         }
-        return { success: false, needsOnboarding: false };
     }, []);
 
     const createAccount = useCallback(async (email: string) => {
         const result = await login(email);
-        return { success: result.success };
+        return { success: result.success, error: result.error };
     }, [login]);
 
     const logout = useCallback(async () => {
