@@ -1,20 +1,32 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { StylePreferencesSchema } from "../../../../packages/contracts/src";
+
+// ─── In-memory rate limiter (5 req / 60s / IP) ───────────────────────────────
+// For production, swap this with Upstash Redis or Cloudflare rate limiting rules
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 5;
+const WINDOW_MS = 60_000;
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter: number } {
+    const now = Date.now();
+    const entry = rateLimitMap.get(ip);
+
+    if (!entry || now > entry.resetAt) {
+        rateLimitMap.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+        return { allowed: true, retryAfter: 0 };
+    }
+
+    if (entry.count >= RATE_LIMIT) {
+        return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+    }
+
+    entry.count += 1;
+    return { allowed: true, retryAfter: 0 };
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface SwipeCard {
-    id: string;
-    label: string;
-    category: string;
-    tags: string[];
-}
-
-interface LLMPayload {
-    fitType: string;
-    dimensions?: Record<string, string>;
-    liked: SwipeCard[];
-    passed: SwipeCard[];
-}
+type LLMPayload = z.infer<typeof StylePreferencesSchema>;
 
 interface LLMResult {
     styleTags: string[];
@@ -22,10 +34,10 @@ interface LLMResult {
     avoidCategories: string[];
     fitNotes: string[];
     summary: string;
+    fallback?: boolean;
 }
 
 // ─── Rules-based fallback (always safe) ──────────────────────────────────────
-
 function rulesBasedAnalysis(payload: LLMPayload): LLMResult {
     const tagCounts: Record<string, number> = {};
     const catCounts: Record<string, number> = {};
@@ -66,46 +78,35 @@ function rulesBasedAnalysis(payload: LLMPayload): LLMResult {
 
     const topStyle = styleTags[0] || "casual";
     const topCat = preferredCategories[0] || "tops";
-
     const summary = `Based on your swipes, you lean ${topStyle} with a preference for ${topCat}. We have curated your ${fitLabel} fit recommendations to match your style.`;
 
     return { styleTags, preferredCategories, avoidCategories, fitNotes, summary };
 }
 
-// ─── Groq provider (free tier) ───────────────────────────────────────────────
-
+// ─── Groq provider ───────────────────────────────────────────────────────────
 async function groqAnalysis(payload: LLMPayload): Promise<LLMResult | null> {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) return null;
 
-    const prompt = `
-You are a personal stylist for a big and tall menswear retailer.
-A customer completed a style preference quiz. Based on the data below, return a JSON object with these exact fields:
-- styleTags: string[] (top 5 style keywords)
-- preferredCategories: string[] (top 3 clothing categories they liked)
-- avoidCategories: string[] (categories they consistently skipped)
-- fitNotes: string[] (observations about their fit/sizing preferences)
-- summary: string (one sentence personalised recommendation rationale, friendly tone, no em dashes)
+    const prompt = `You are a personal stylist for a big and tall menswear retailer.
+A customer completed a style preference quiz. Return only valid JSON (no markdown) with:
+- styleTags: string[] (top 5)
+- preferredCategories: string[] (top 3)
+- avoidCategories: string[]
+- fitNotes: string[]
+- summary: string (one sentence, friendly, no em dashes)
 
 Customer data:
 - Fit type: ${payload.fitType}
 - Dimensions: ${JSON.stringify(payload.dimensions || {})}
-- Liked items: ${payload.liked.map((c) => `${c.label} [${c.tags.join(", ")}]`).join("; ")}
-- Passed items: ${payload.passed.map((c) => `${c.label} [${c.tags.join(", ")}]`).join("; ")}
-
-Return only valid JSON, no markdown.
-`.trim();
+- Liked: ${payload.liked.map((c) => `${c.label} [${c.tags.join(", ")}]`).join("; ")}
+- Passed: ${payload.passed.map((c) => `${c.label} [${c.tags.join(", ")}]`).join("; ")}`.trim();
 
     try {
         const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-            body: JSON.stringify({
-                model: "llama3-8b-8192",
-                messages: [{ role: "user", content: prompt }],
-                max_tokens: 400,
-                temperature: 0.4,
-            }),
+            body: JSON.stringify({ model: "llama3-8b-8192", messages: [{ role: "user", content: prompt }], max_tokens: 400, temperature: 0.4 }),
             signal: AbortSignal.timeout(8000),
         });
         if (!res.ok) return null;
@@ -117,59 +118,58 @@ Return only valid JSON, no markdown.
     }
 }
 
-// ─── HuggingFace provider (free tier) ────────────────────────────────────────
-
-async function huggingfaceAnalysis(payload: LLMPayload): Promise<LLMResult | null> {
-    const apiKey = process.env.HUGGINGFACE_API_KEY;
-    if (!apiKey) return null;
-
-    try {
-        const res = await fetch(
-            "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-                body: JSON.stringify({
-                    inputs: `Extract style preferences as JSON from: liked=${payload.liked.map((c) => c.tags.join(",")).join("; ")}`,
-                    parameters: { max_new_tokens: 200 },
-                }),
-                signal: AbortSignal.timeout(10000),
-            }
-        );
-        if (!res.ok) return null;
-        // HF returns text — use rules fallback to structure it
-        return rulesBasedAnalysis(payload);
-    } catch {
-        return null;
-    }
-}
-
 // ─── Route handler ────────────────────────────────────────────────────────────
+export async function POST(request: NextRequest) {
+    const start = Date.now();
 
-export async function POST(request: Request) {
-    try {
-        const payload = (await request.json()) as LLMPayload;
-
-        const provider = process.env.LLM_PROVIDER ?? "fallback";
-
-        let result: LLMResult | null = null;
-
-        if (provider === "groq") {
-            result = await groqAnalysis(payload);
-        } else if (provider === "huggingface") {
-            result = await huggingfaceAnalysis(payload);
-        }
-
-        // Always fall back to rules-based if provider fails or not configured
-        if (!result) {
-            result = rulesBasedAnalysis(payload);
-        }
-
-        return NextResponse.json(result);
-    } catch {
-        return NextResponse.json(
-            { error: "Analysis failed" },
-            { status: 500 }
-        );
+    // Rate limiting
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const rateCheck = checkRateLimit(ip);
+    if (!rateCheck.allowed) {
+        console.log(`[llm] Rate limited ip=${ip}`);
+        return NextResponse.json({ error: "Too many requests" }, {
+            status: 429,
+            headers: { "Retry-After": String(rateCheck.retryAfter) }
+        });
     }
+
+    // Zod validation
+    let payload: LLMPayload;
+    try {
+        const body = await request.json();
+        payload = StylePreferencesSchema.parse(body);
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return NextResponse.json({ error: "Invalid request", details: err.errors }, { status: 400 });
+        }
+        return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const provider = process.env.LLM_PROVIDER ?? "fallback";
+    let result: LLMResult | null = null;
+    let usedProvider = "rules-fallback";
+
+    if (provider === "groq") {
+        result = await groqAnalysis(payload);
+        if (result) usedProvider = "groq";
+    }
+
+    // Always fall back to rules-based if provider fails or not configured
+    const fallbackTriggered = !result;
+    if (!result) {
+        result = rulesBasedAnalysis(payload);
+    }
+
+    // Telemetry — structured log (Sentry-ready, replace console with Sentry.captureMessage)
+    console.log(JSON.stringify({
+        event: "llm_analyse",
+        provider: usedProvider,
+        fallback: fallbackTriggered,
+        likedCount: payload.liked.length,
+        passedCount: payload.passed.length,
+        latencyMs: Date.now() - start,
+        timestamp: new Date().toISOString(),
+    }));
+
+    return NextResponse.json({ ...result, fallback: fallbackTriggered });
 }

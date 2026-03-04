@@ -40,3 +40,43 @@ These are the shared "Lego blocks" that every feature uses.
    ```
 2. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 3. Start editing files in `src/features/` to see changes.
+
+---
+
+## Global CDN & Privacy Architecture
+
+Our global edge layer is powered by Cloudflare, sitting in front of the Next.js frontend (Vercel) and Node.js/Supabase backend (Sydney, AU).
+
+### 1. Architecture Overview
+**Traffic Flow:**
+1. **Customer Request:** Hits the nearest Cloudflare Edge server (e.g., in Bahrain or Sydney).
+2. **Edge Processing (Cloudflare):**
+   - **Static Assets:** Served directly from Cloudflare cache.
+   - **Anonymous HTML/SSR:** Served from Cloudflare cache (respecting Vercel's `Cache-Control` headers). 
+   - **Personalized/Authenticated/Cart:** Cache instantly bypassed based on `ks_*` cookies.
+3. **Dynamic Routing:** Cache-bypassed requests traverse Cloudflare's **Argo Smart Routing** backbone to reach Vercel or the Sydney Node.js API Gateway, minimizing latency.
+4. **Third-Party Tags:** Cloudflare Zaraz evaluates the `ks_consent` cookie. If consent is granted, tracking scripts are executed at the edge, reducing client bloat and strictly enforcing privacy.
+
+### 2. Actionable Implementation Steps
+
+**Networking & Optimization:**
+- **Proxy Status:** Enable Proxy (Orange Cloud).
+- **SSL/TLS:** Full (Strict).
+- **Argo Smart Routing:** Enable (crucial for Middle East markets to Sydney).
+- **Tiered Caching:** Enable to prevent cache stampedes on Vercel.
+
+**Modern Cache Rules:**
+- **Rule 1 (Bypass sessions):** `Cookie` `matches regex` `(^|;) *(__Host-ks_session|ks_logged_in|ks_cart_token|__Host-ks_admin_session)=` -> Bypass Cache
+- **Rule 2 (Static assets):** `URI Path` -> `Extension` `is in` `css, js, jpg, jpeg, png, webp, avif, svg, woff2` -> Eligible for cache
+
+**Security Posture:**
+- **Bot Management:** Super Bot Fight Mode (Block Definite Bots, Managed Challenge for Likely Bots).
+- **Credential Stuffing Rate Limiting:** `/login` or `/api/auth` (5 req / min / IP -> Block).
+- **Checkout Fraud Rate Limiting:** `/checkout` or `/api/payment` (10 req / min / IP -> Managed Challenge via Turnstile).
+- **WAF:** Cloudflare Managed Ruleset (OWASP Core Ruleset) on moderate sensitivity.
+
+### 3. Compliance Checklist (GDPR & APP)
+- [ ] **Data Processing Agreement:** Execute Cloudflare’s standard DPA.
+- [ ] **Consent Integration:** Ensure Next.js sets `ks_consent` cookie and verify Zaraz respects it.
+- [ ] **IP Masking:** Configure Logpush to omit `ClientIP` or use pseudo-anonymization.
+- [ ] **Query String Cleaning:** Use Transform Rules or custom Edge Workers to sanitize PII from URLs (e.g., `?email=test@test.com`).

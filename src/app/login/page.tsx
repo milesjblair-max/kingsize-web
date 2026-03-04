@@ -53,10 +53,10 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
     const { login } = useAuth();
     const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim()) { setError("Please enter your email"); return; }
-        const result = login(email.trim().toLowerCase());
+        const result = await login(email.trim().toLowerCase());
         if (result.success) {
             router.push(result.needsOnboarding ? "/onboarding" : "/account");
         }
@@ -101,10 +101,10 @@ const RegisterForm = ({ onSwitch }: { onSwitch: () => void }) => {
     const { createAccount } = useAuth();
     const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim()) { setError("Please enter a valid email"); return; }
-        const result = createAccount(email.trim().toLowerCase());
+        const result = await createAccount(email.trim().toLowerCase());
         if (result.success) {
             router.push("/onboarding");
         }
