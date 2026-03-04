@@ -10,6 +10,8 @@ import {
     Package, RotateCcw, MapPin, HelpCircle,
     LogOut, Check, RefreshCw, Heart,
 } from "lucide-react";
+import { FitSelector } from "@/features/personalisation/FitSelector";
+
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type Tab = "overview" | "profile" | "measurements" | "style" | "orders" | "returns" | "addresses";
@@ -264,21 +266,13 @@ function ProfileTab({ showToast }: { showToast: (m: string) => void }) {
                 {errors.mobile && <p className="text-xs text-red-500 mt-1">{errors.mobile}</p>}
             </div>
 
-            <div className="mb-4">
+            <div className="mb-6">
                 <label className={labelCls}>Fit type</label>
-                <div className="flex gap-2">
-                    {FIT_OPTIONS.map((opt) => (
-                        <button key={opt.key} onClick={() => setForm((f) => ({ ...f, fitType: opt.key }))}
-                            className="flex-1 h-10 rounded-md border text-xs font-bold transition-all"
-                            style={{
-                                borderColor: form.fitType === opt.key ? "#111" : "#E5E7EB",
-                                background: form.fitType === opt.key ? "#111" : "#fff",
-                                color: form.fitType === opt.key ? "#fff" : "#374151",
-                            }}>
-                            {opt.label}
-                        </button>
-                    ))}
-                </div>
+                <FitSelector
+                    initial={form.fitType}
+                    onSelect={(fit) => setForm((f) => ({ ...f, fitType: fit }))}
+                    compact
+                />
             </div>
 
             <div className="mb-6">

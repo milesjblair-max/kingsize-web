@@ -704,7 +704,21 @@ function OnboardingContent() {
     const handleLike = (card: SwipeCard) => setLiked((p) => [...p, card]);
     const handlePass = (card: SwipeCard) => setPassed((p) => [...p, card]);
 
-    const handleAnalysisComplete = (prefs: StylePreferences) => {
+    const handleAnalysisComplete = async (prefs: StylePreferences) => {
+        // Post swipe results to gateway for persistence & cache busting
+        try {
+            await fetch("/api/gateway/personalization/swipe", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    liked: prefs.liked.map(c => ({ id: c.id, category: c.category, tags: c.tags })),
+                    passed: prefs.passed.map(c => ({ id: c.id, category: c.category, tags: c.tags })),
+                }),
+            });
+        } catch (err) {
+            console.error("[personalization] failed to save swipe results to gateway", err);
+        }
+
         if (isRedo && profile) {
             // Redo mode: update only preferences, keep existing profile
             savePreferences(prefs);
