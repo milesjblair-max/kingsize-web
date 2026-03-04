@@ -84,7 +84,10 @@ export class JsonFileCustomerProfileRepository implements ICustomerProfileReposi
     }
 }
 
+import { PostgresCustomerProfileRepository } from "./PostgresCustomerProfileRepository";
+
 // ─── Singleton for use in API routes ─────────────────────────────────────────
 
-export const customerProfileRepository: ICustomerProfileRepository =
-    new JsonFileCustomerProfileRepository();
+export const customerProfileRepository: ICustomerProfileRepository = process.env.DATABASE_URL
+    ? new PostgresCustomerProfileRepository()
+    : new JsonFileCustomerProfileRepository();

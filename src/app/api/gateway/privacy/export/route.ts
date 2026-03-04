@@ -1,26 +1,43 @@
-/**
- * GET /api/gateway/privacy/export
- * Stub: exports all first-party data for a customer (GDPR / APP Data Portability).
- */
 import { NextRequest, NextResponse } from "next/server";
-import { dbQueryOne, dbQuery } from "@/lib/db";
+import { sessionRepository } from "@/lib/SessionRepository";
+import { customerProfileRepository } from "@/lib/CustomerProfileRepository";
+import { dbQuery } from "@/lib/db";
+
+const SESSION_COOKIE = "ks_session_id";
 
 export async function GET(request: NextRequest) {
-    const email = request.nextUrl.searchParams.get("email");
-    if (!email) return NextResponse.json({ error: "email query param required" }, { status: 400 });
+    const sessionId = request.cookies.get(SESSION_COOKIE)?.value;
+    if (!sessionId) {
+        return NextResponse.json({ error: "No active session" }, { status: 400 });
+    }
 
-    const customer = await dbQueryOne<{ id: string }>("SELECT id FROM customers WHERE email = $1", [email]);
-    if (!customer) return NextResponse.json({ data: null, message: "No record found" });
+    const session = await sessionRepository.findById(sessionId);
+    if (!session || !session.customerId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const [fitProfile, prefProfile, signals] = await Promise.all([
-        dbQueryOne("SELECT * FROM fit_profiles WHERE customer_id = $1", [customer.id]),
-        dbQueryOne("SELECT style_tags, category_affinity, brand_affinity FROM preference_profiles WHERE customer_id = $1", [customer.id]),
-        dbQuery("SELECT signal_type, entity_label, created_at FROM session_signals ss JOIN sessions s ON s.id = ss.session_id WHERE s.customer_id = $1 ORDER BY ss.created_at DESC LIMIT 500", [customer.id]),
-    ]);
+    // Gather all PII for export
+    const profile = await customerProfileRepository.findById(session.customerId);
+    const preferences = await dbQuery(
+        "SELECT * FROM preference_profiles WHERE customer_id = $1",
+        [session.customerId]
+    );
+    const signals = await dbQuery(
+        "SELECT * FROM session_signals WHERE session_id = $1",
+        [sessionId]
+    );
 
-    return NextResponse.json({
-        data: { fitProfile, preferenceProfile: prefProfile, recentSignals: signals },
-        generatedAt: new Date().toISOString(),
-        note: "For full Klaviyo data export, visit your Klaviyo profile in the Klaviyo dashboard.",
+    const exportData = {
+        profile,
+        preferences,
+        signals,
+        exportedAt: new Date().toISOString(),
+        site: "Kingsize"
+    };
+
+    return NextResponse.json(exportData, {
+        headers: {
+            "Content-Disposition": `attachment; filename="kingsize-data-export-${session.customerId}.json"`
+        }
     });
 }

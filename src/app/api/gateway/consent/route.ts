@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { ConsentSchema, isKlaviyoMarketingAllowed } from "@/lib/consent";
+import { isKlaviyoMarketingAllowed } from "@/lib/consent";
 import type { ConsentLevel } from "@/lib/consent";
-import { dbQuery, dbQueryOne } from "@/lib/db";
+import { sessionRepository } from "@/lib/SessionRepository";
+import { dbQueryOne } from "@/lib/db";
 import { cache } from "@/lib/cache";
 import { getKlaviyoClient } from "@/integrations/klaviyo/KlaviyoClient";
 
@@ -22,11 +23,8 @@ export async function GET(request: NextRequest) {
     const cached = await cache.get<ConsentLevel>(cacheKey);
     if (cached) return NextResponse.json({ consentState: cached }, { headers: { "X-Cache": "HIT" } });
 
-    const row = await dbQueryOne<{ consent_state: string }>(
-        "SELECT consent_state FROM sessions WHERE id = $1",
-        [sessionId]
-    );
-    const level = (row?.consent_state ?? "essential") as ConsentLevel;
+    const session = await sessionRepository.findById(sessionId);
+    const level = session?.consentState ?? "essential";
     await cache.set(cacheKey, level, 300);
     return NextResponse.json({ consentState: level });
 }
@@ -46,11 +44,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    // Persist to DB
-    await dbQuery(
-        `UPDATE sessions SET consent_state = $1, updated_at = NOW() WHERE id = $2`,
-        [level, sessionId]
-    );
+    // Persist to DB via repository
+    await sessionRepository.updateConsent(sessionId, level);
 
     // Invalidate cache
     await cache.del(`consent:${sessionId}`);
@@ -58,16 +53,15 @@ export async function POST(request: NextRequest) {
     // If marketing consent granted: async sync to Klaviyo
     if (isKlaviyoMarketingAllowed(level)) {
         const klaviyo = getKlaviyoClient();
-        // Look up customer email if linked
-        const link = await dbQueryOne<{ email: string; klaviyo_profile_id: string }>(
-            `SELECT c.email, kl.klaviyo_profile_id
-             FROM klaviyo_links kl
-             JOIN customers c ON c.id = kl.customer_id
-             WHERE kl.session_id = $1 LIMIT 1`,
-            [sessionId]
-        );
-        if (link?.email) {
-            void klaviyo.upsertProfile({ email: link.email, consentState: level });
+        const session = await sessionRepository.findById(sessionId);
+        if (session?.customerId) {
+            const link = await dbQueryOne<{ email: string }>(
+                "SELECT email FROM customers WHERE id = $1",
+                [session.customerId]
+            );
+            if (link?.email) {
+                void klaviyo.upsertProfile({ email: link.email, consentState: level });
+            }
         }
     }
 
