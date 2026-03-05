@@ -76,11 +76,12 @@ export async function POST(request: NextRequest) {
         });
         res.cookies.set(COOKIE_NAME, session.id, COOKIE_OPTIONS);
         return res;
-    } catch (err) {
+    } catch (err: any) {
+        console.error("[gateway/session] POST error:", err);
         if (err instanceof z.ZodError) {
             return NextResponse.json({ success: false, error: err.errors }, { status: 400 });
         }
-        return NextResponse.json({ success: false, error: "Login failed" }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Login failed", detail: err.message }, { status: 500 });
     }
 }
 
