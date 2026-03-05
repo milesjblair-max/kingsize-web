@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sessionRepository } from "@/lib/SessionRepository";
-import { customerProfileRepository } from "@/lib/CustomerProfileRepository";
+import { userRepository } from "@/lib/UserRepository";
 import { getKlaviyoClient } from "@/integrations/klaviyo/KlaviyoClient";
 
 const SESSION_COOKIE = "ks_session_id";
@@ -12,27 +12,22 @@ export async function POST(request: NextRequest) {
     }
 
     const session = await sessionRepository.findById(sessionId);
-    if (!session || !session.customerId) {
+    if (!session?.userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 1. Get customer for Klaviyo sync
-    const customer = await customerProfileRepository.findById(session.customerId);
-
-    // 2. Fire Klaviyo deletion request (GDPR/PII removal)
-    if (customer?.email) {
+    const user = await userRepository.findById(session.userId);
+    if (user) {
         const klaviyo = getKlaviyoClient();
-        // Klaviyo doesn't have a direct "forget me" REST endpoint in the same way, 
-        // but we can unsubscribe and fire a support event or use the Data Privacy API if available.
-        // For this architecture, we trigger the local deletion first.
-        console.log(`[privacy] Deletion requested for ${customer.email}`);
+        console.log(`[privacy] Deletion requested for user ${user.id} (${user.email})`);
+        // Trigger Klaviyo profile suppression (fire-and-forget)
+        void klaviyo.upsertProfile({ email: user.email, consentState: "essential" });
     }
 
-    // 3. Delete local profile and session
-    await customerProfileRepository.delete(session.customerId);
-    await sessionRepository.delete(sessionId);
+    // Delete user (CASCADE removes profiles, sessions, swipe_events, preference_vectors)
+    await userRepository.delete(session.userId);
 
-    const res = NextResponse.json({ success: true, message: "Data deletion scheduled" });
+    const res = NextResponse.json({ success: true, message: "Your data has been deleted." });
     res.cookies.set(SESSION_COOKIE, "", { maxAge: 0 });
     return res;
 }

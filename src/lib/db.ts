@@ -1,12 +1,13 @@
 /**
- * Database connection pool
- * - If DATABASE_URL is set: uses pg Pool (Postgres / Supabase)
- * - Otherwise: returns a MockDb backed by JSON files (local dev, no Postgres needed)
+ * Database connection pool — Postgres only.
+ *
+ * IMPORTANT: This module deliberately has NO filesystem fallback.
+ * If DATABASE_URL is not set in production, the module throws immediately
+ * so failures are surfaced at startup, not buried in a silent no-op.
+ *
+ * For local development without a real Postgres instance, set up a free
+ * Supabase or Neon project and point DATABASE_URL at it.
  */
-import path from "path";
-import fs from "fs";
-
-// ─── Interface ────────────────────────────────────────────────────────────────
 
 export interface IDb {
     query<T = Record<string, unknown>>(
@@ -15,59 +16,51 @@ export interface IDb {
     ): Promise<{ rows: T[]; rowCount: number }>;
 }
 
-// ─── Postgres (production) ────────────────────────────────────────────────────
+// ─── Connection pool singleton ────────────────────────────────────────────────
 
-let _pgPool: IDb | null = null;
+let _pool: IDb | null = null;
 
-async function getPostgresPool(): Promise<IDb> {
-    if (_pgPool) return _pgPool;
+async function getPool(): Promise<IDb> {
+    if (_pool) return _pool;
+
+    if (!process.env.DATABASE_URL) {
+        throw new Error(
+            "[db] DATABASE_URL is not set. " +
+            "Please add it to your Vercel project environment variables " +
+            "(Project → Settings → Environment Variables → DATABASE_URL)."
+        );
+    }
+
     const { Pool } = await import("pg");
     const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        max: 10,
-        idleTimeoutMillis: 30_000,
+        // Vercel serverless: keep pool small to avoid exhausting connections
+        max: 5,
+        idleTimeoutMillis: 10_000,
         connectionTimeoutMillis: 5_000,
-        ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false },
+        ssl: process.env.DATABASE_SSL === "false"
+            ? false
+            : { rejectUnauthorized: false },
     });
-    _pgPool = {
+
+    // Verify connectivity on first use
+    await pool.query("SELECT 1");
+    console.log("[db] Postgres connected");
+
+    _pool = {
         query: async <T>(sql: string, params?: unknown[]) => {
             const result = await pool.query(sql, params);
             return { rows: result.rows as T[], rowCount: result.rowCount ?? 0 };
         },
     };
-    return _pgPool;
+    return _pool;
 }
 
-// ─── MockDb (local dev — JSON files in .data/) ───────────────────────────────
-
-const DATA_DIR = path.join(process.cwd(), ".data", "db");
-
-class MockDb implements IDb {
-    async query<T>(_sql: string, _params?: unknown[]): Promise<{ rows: T[]; rowCount: number }> {
-        // In mock mode, callers should use the typed repository classes directly.
-        // This stub allows code that calls db.query() to compile and not throw.
-        return { rows: [], rowCount: 0 };
-    }
-}
-
-// ─── Export singleton ─────────────────────────────────────────────────────────
-
-let _db: IDb | null = null;
+// ─── Public helpers ───────────────────────────────────────────────────────────
 
 export async function getDb(): Promise<IDb> {
-    if (_db) return _db;
-    if (process.env.DATABASE_URL) {
-        _db = await getPostgresPool();
-        console.log("[db] Connected to Postgres");
-    } else {
-        if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-        _db = new MockDb();
-        console.log("[db] No DATABASE_URL — using MockDb (local dev mode)");
-    }
-    return _db;
+    return getPool();
 }
-
-// ─── Helper: run a query, returning rows ─────────────────────────────────────
 
 export async function dbQuery<T = Record<string, unknown>>(
     sql: string,

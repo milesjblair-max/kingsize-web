@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sessionRepository } from "@/lib/SessionRepository";
-import { customerProfileRepository } from "@/lib/CustomerProfileRepository";
+import { userRepository } from "@/lib/UserRepository";
 import { dbQuery } from "@/lib/db";
 
 const SESSION_COOKIE = "ks_session_id";
@@ -12,32 +12,28 @@ export async function GET(request: NextRequest) {
     }
 
     const session = await sessionRepository.findById(sessionId);
-    if (!session || !session.customerId) {
+    if (!session?.userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Gather all PII for export
-    const profile = await customerProfileRepository.findById(session.customerId);
-    const preferences = await dbQuery(
-        "SELECT * FROM preference_profiles WHERE customer_id = $1",
-        [session.customerId]
-    );
-    const signals = await dbQuery(
-        "SELECT * FROM session_signals WHERE session_id = $1",
-        [sessionId]
-    );
+    const [user, swipes, vector] = await Promise.all([
+        userRepository.findById(session.userId),
+        dbQuery<any>("SELECT product_id, action, created_at FROM swipe_events WHERE user_id = $1 ORDER BY created_at DESC", [session.userId]),
+        dbQuery<any>("SELECT vector_embedding, updated_at FROM preference_vectors WHERE user_id = $1", [session.userId]),
+    ]);
 
     const exportData = {
-        profile,
-        preferences,
-        signals,
         exportedAt: new Date().toISOString(),
-        site: "Kingsize"
+        site: "Kingsize",
+        user: user ? { id: user.id, email: user.email, createdAt: user.createdAt } : null,
+        profile: user?.profile ?? null,
+        swipeHistory: swipes,
+        preferenceVector: vector[0]?.vector_embedding ?? null,
     };
 
     return NextResponse.json(exportData, {
         headers: {
-            "Content-Disposition": `attachment; filename="kingsize-data-export-${session.customerId}.json"`
+            "Content-Disposition": `attachment; filename="kingsize-data-export-${session.userId}.json"`
         }
     });
 }

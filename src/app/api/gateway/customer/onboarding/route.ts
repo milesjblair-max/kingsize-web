@@ -1,29 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { customerProfileRepository } from "@/lib/CustomerProfileRepository";
-import { OnboardingSchema } from "../../../../../../packages/contracts/src";
+import { userRepository } from "@/lib/UserRepository";
+import { sessionRepository } from "@/lib/SessionRepository";
 import { z } from "zod";
 
-// POST — Save full onboarding profile
+const COOKIE_NAME = "ks_session_id";
+
+const OnboardingSchema = z.object({
+    fitType: z.enum(["big", "tall", "big-tall"]).optional(),
+    preferredBrands: z.array(z.string()).optional(),
+    preferredCategories: z.array(z.string()).optional(),
+    measurements: z.record(z.union([z.string(), z.number()])).optional(),
+    marketingConsent: z.boolean().optional(),
+});
+
+// POST — Save onboarding profile
 export async function POST(request: NextRequest) {
-    const sessionId = request.cookies.get("ks_session_id")?.value;
+    const sessionId = request.cookies.get(COOKIE_NAME)?.value;
     if (!sessionId) {
         return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
     }
 
     try {
+        const session = await sessionRepository.findById(sessionId);
+        if (!session?.userId) {
+            return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
+        }
+
         const body = await request.json();
         const data = OnboardingSchema.parse(body);
 
-        const profile = await customerProfileRepository.upsert({
+        const profile = await userRepository.upsertProfile(session.userId, {
             ...data,
-            onboardingComplete: true,
+            onboardingDone: true,
         });
 
-        return NextResponse.json({ success: true, profile: { onboardingComplete: profile.onboardingComplete } });
-    } catch (err) {
+        return NextResponse.json({ success: true, profile: { onboardingDone: profile.onboardingDone } });
+    } catch (err: any) {
+        console.error("[gateway/onboarding] POST error:", err);
         if (err instanceof z.ZodError) {
             return NextResponse.json({ success: false, error: err.errors }, { status: 400 });
         }
-        return NextResponse.json({ success: false, error: "Onboarding save failed" }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Onboarding save failed", detail: err.message }, { status: 500 });
     }
 }

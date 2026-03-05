@@ -36,16 +36,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid swipe data" }, { status: 400 });
     }
 
-    // Resolve customer if authenticated
-    const row = await dbQueryOne<{ customer_id: string | null }>(
-        "SELECT customer_id FROM sessions WHERE id = $1",
+    // Resolve user if authenticated via session
+    const row = await dbQueryOne<{ user_id: string | null }>(
+        "SELECT user_id FROM sessions WHERE id = $1",
         [sessionId]
     );
 
     const svc = new PersonalizationService(new MockProductProvider());
     await svc.applySwipeResults({
         sessionId,
-        customerId: row?.customer_id ?? undefined,
+        customerId: row?.user_id ?? undefined,
         liked: body.liked,
         passed: body.passed,
     });

@@ -38,6 +38,51 @@ These are the shared "Lego blocks" that every feature uses.
    ```bash
    npm run dev
    ```
+
+## Database Setup (Production)
+
+Kingsize uses **Postgres** for all durable customer data (users, profiles, swipe events).
+The platform is designed to run stateless on Vercel — all state lives in the database.
+
+### 1. Set DATABASE_URL in Vercel
+
+Go to **Project → Settings → Environment Variables** and add:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Your Postgres connection string (e.g. from [Supabase](https://supabase.com) or [Neon](https://neon.tech)) |
+
+> **Tip:** For local dev, create a free Supabase project and use its connection string.
+> The app has no filesystem fallback — it will throw a clear error at startup if `DATABASE_URL` is missing.
+
+### 2. Run Migrations
+
+Run the production schema migration against your database:
+
+```bash
+psql $DATABASE_URL -f db/migrations/002_production_schema.sql
+```
+
+This creates the following tables: `users`, `profiles`, `swipe_events`, `preference_vectors`, `sessions`, `schema_version`.
+
+### 3. Verify Connectivity
+
+After deploying, visit the health endpoint:
+
+```
+GET https://kingsize-web.vercel.app/api/gateway/debug/db
+```
+
+Expected response:
+```json
+{
+  "status": "ok",
+  "env": "production",
+  "schema_version": 2,
+  "db_time": "2026-03-05T04:00:00Z"
+}
+```
+
 2. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 3. Start editing files in `src/features/` to see changes.
 

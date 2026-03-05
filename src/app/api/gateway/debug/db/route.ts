@@ -1,34 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
-import { dbQuery, dbQueryOne } from "@/lib/db";
+import { NextResponse } from "next/server";
+import { dbQueryOne } from "@/lib/db";
 
+/**
+ * GET /api/gateway/debug/db
+ * Database health endpoint.
+ * Returns: connectivity status, schema version, environment.
+ */
 export async function GET() {
+    const env = process.env.NODE_ENV ?? "unknown";
+
+    if (!process.env.DATABASE_URL) {
+        return NextResponse.json({
+            status: "error",
+            env,
+            message: "DATABASE_URL is not set. Add it in Vercel: Project → Settings → Environment Variables",
+        }, { status: 503 });
+    }
+
     try {
-        if (!process.env.DATABASE_URL) {
-            return NextResponse.json({ status: "error", message: "DATABASE_URL not set" });
-        }
-
-        // 1. Check connectivity
-        const now = await dbQueryOne("SELECT NOW() as now");
-
-        // 2. Check tables
-        const tables = await dbQuery<{ tablename: string }>(
-            "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'"
-        );
+        const [timeRow, versionRow] = await Promise.all([
+            dbQueryOne<{ now: Date }>("SELECT NOW() AS now"),
+            dbQueryOne<{ version: number }>("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1"),
+        ]);
 
         return NextResponse.json({
             status: "ok",
-            time: now?.now,
-            tables: tables.map(t => t.tablename),
-            env: {
-                hasDbUrl: !!process.env.DATABASE_URL,
-                nodeEnv: process.env.NODE_ENV
-            }
+            env,
+            schema_version: versionRow?.version ?? null,
+            db_time: timeRow?.now?.toISOString() ?? null,
         });
     } catch (err: any) {
         return NextResponse.json({
             status: "error",
+            env,
             message: err.message,
-            stack: err.stack,
-        }, { status: 500 });
+        }, { status: 503 });
     }
 }

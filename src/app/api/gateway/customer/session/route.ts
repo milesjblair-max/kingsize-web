@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { customerProfileRepository } from "@/lib/CustomerProfileRepository";
+import { userRepository } from "@/lib/UserRepository";
 import { sessionRepository } from "@/lib/SessionRepository";
-import { SessionLoginSchema } from "@kingsize/contracts";
 import { z } from "zod";
 
 const COOKIE_NAME = "ks_session_id";
@@ -13,66 +12,81 @@ const COOKIE_OPTIONS = {
     maxAge: 60 * 60 * 24 * 30, // 30 days
 };
 
-// GET — Return current session profile
+const LoginSchema = z.object({ email: z.string().email() });
+
+// GET — Return current session and profile
 export async function GET(request: NextRequest) {
     const sessionId = request.cookies.get(COOKIE_NAME)?.value;
     if (!sessionId) {
         return NextResponse.json({ authenticated: false, profile: null });
     }
 
-    const session = await sessionRepository.findById(sessionId);
-    if (!session) {
-        const res = NextResponse.json({ authenticated: false, profile: null });
-        res.cookies.delete(COOKIE_NAME);
-        return res;
+    try {
+        const session = await sessionRepository.findById(sessionId);
+        if (!session) {
+            const res = NextResponse.json({ authenticated: false, profile: null });
+            res.cookies.delete(COOKIE_NAME);
+            return res;
+        }
+
+        // Touch session for activity tracking
+        void sessionRepository.touch(sessionId);
+
+        if (!session.userId) {
+            return NextResponse.json({ authenticated: false, profile: null, sessionId: session.id });
+        }
+
+        const user = await userRepository.findById(session.userId);
+        if (!user) {
+            return NextResponse.json({ authenticated: false, profile: null });
+        }
+
+        return NextResponse.json({
+            authenticated: true,
+            sessionId: session.id,
+            user: {
+                id: user.id,
+                email: user.email,
+            },
+            profile: user.profile ? {
+                fitType: user.profile.fitType,
+                preferredBrands: user.profile.preferredBrands,
+                preferredCategories: user.profile.preferredCategories,
+                measurements: user.profile.measurements,
+                marketingConsent: user.profile.marketingConsent,
+                onboardingDone: user.profile.onboardingDone,
+            } : null,
+        });
+    } catch (err: any) {
+        console.error("[gateway/session] GET error:", err);
+        return NextResponse.json({ error: "Session lookup failed" }, { status: 500 });
     }
-
-    // Touch session for activity tracking
-    await sessionRepository.touch(sessionId);
-
-    if (!session.customerId) {
-        return NextResponse.json({ authenticated: false, profile: null, sessionId: session.id });
-    }
-
-    const profile = await customerProfileRepository.findById(session.customerId);
-    if (!profile) {
-        return NextResponse.json({ authenticated: false, profile: null });
-    }
-
-    // Return profile WITHOUT PII that shouldn't be in the browser payload
-    const { email, firstName, lastName, fitType, dimensions, contactPref, onboardingComplete } = profile;
-    return NextResponse.json({
-        authenticated: true,
-        profile: { email, firstName, lastName, fitType, dimensions, contactPref, onboardingComplete },
-        sessionId: session.id
-    });
 }
 
 // POST — Login or create account
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { email } = SessionLoginSchema.parse(body);
+        const { email } = LoginSchema.parse(body);
 
-        // 1. Get or create customer
-        let profile = await customerProfileRepository.findByEmail(email);
-        if (!profile) {
-            profile = await customerProfileRepository.upsert({ email, onboardingComplete: false });
-        }
+        // 1. Find or create user (idempotent)
+        const user = await userRepository.findOrCreate(email);
 
-        // 2. Get existing session or create fresh
+        // 2. Get existing session or create fresh, then link to user
         const existingSessionId = request.cookies.get(COOKIE_NAME)?.value;
-        let session = existingSessionId ? await sessionRepository.findById(existingSessionId) : null;
+        let session = existingSessionId
+            ? await sessionRepository.findById(existingSessionId)
+            : null;
 
         if (!session) {
-            session = await sessionRepository.create({ customerId: profile.id });
+            session = await sessionRepository.create({ userId: user.id });
         } else {
-            await sessionRepository.linkToCustomer(session.id, profile.id);
+            await sessionRepository.linkToUser(session.id, user.id);
         }
 
         const res = NextResponse.json({
             success: true,
-            needsOnboarding: !profile.onboardingComplete,
+            needsOnboarding: !user.profile?.onboardingDone,
         });
         res.cookies.set(COOKIE_NAME, session.id, COOKIE_OPTIONS);
         return res;
@@ -85,13 +99,9 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// DELETE — Logout
+// DELETE — Logout (expire cookie; session row stays for audit)
 export async function DELETE(request: NextRequest) {
-    const sessionId = request.cookies.get(COOKIE_NAME)?.value;
     const res = NextResponse.json({ success: true });
-
-    // We don't delete the session from DB (for audit/analytics), we just disconnect the cookie
-    // and create a fresh one if the user stays on the site.
     res.cookies.set(COOKIE_NAME, "", { ...COOKIE_OPTIONS, maxAge: 0 });
     return res;
 }
