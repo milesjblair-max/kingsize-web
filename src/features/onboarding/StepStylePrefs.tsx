@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import Image from "next/image";
 import type { SwipeCardData } from "./useOnboarding";
 import { NavButtons } from "./OnboardingShell";
 import { STYLE_CATEGORIES } from "./useOnboarding";
@@ -32,12 +33,14 @@ function SwipeCardItem({
     // Keyboard support
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            if (e.key === "ArrowRight") { onLike(); }
-            if (e.key === "ArrowLeft") { onPass(); }
+            if (e.key === "ArrowRight") onLike();
+            if (e.key === "ArrowLeft") onPass();
         };
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
     }, [onLike, onPass]);
+
+    const hasRealImage = card.image && card.image.startsWith("/");
 
     return (
         <motion.div
@@ -50,40 +53,49 @@ function SwipeCardItem({
             initial={{ scale: 1, opacity: 1 }}
             exit={{ x: 0, opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
         >
-            {/* Card */}
-            <div className="w-full h-full bg-gray-100 rounded-2xl overflow-hidden relative">
-                {/* Placeholder gradient (in place of real product image) */}
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                    <div className="text-center">
-                        <span className="text-5xl mb-3 block">
-                            {card.category === "Polos" ? "👕" :
-                                card.category === "Tees" ? "👚" :
-                                    card.category === "Shorts" ? "🩳" :
-                                        card.category === "Casual Shirts" ? "👔" :
-                                            card.category === "Activewear" ? "🏋️" :
-                                                card.category === "Footwear" ? "👟" : "🧥"}
-                        </span>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{card.category}</p>
-                        <p className="text-sm font-semibold text-gray-700 mt-1">{card.label}</p>
+            <div className="w-full h-full bg-white rounded-2xl overflow-hidden relative border border-gray-100 shadow-md">
+                {/* Product image or placeholder */}
+                {hasRealImage ? (
+                    <Image
+                        src={card.image}
+                        alt={card.label}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 480px) 100vw, 440px"
+                        priority
+                    />
+                ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                        <div className="text-center">
+                            <span className="text-5xl mb-3 block">
+                                {card.category.includes("Polo") ? "👕" :
+                                    card.category.includes("T-Shirt") ? "👚" :
+                                        card.category.includes("Short") ? "🩳" :
+                                            card.category.includes("Shirt") ? "👔" :
+                                                card.category.includes("Active") ? "🏋️" :
+                                                    card.category.includes("Foot") ? "👟" : "🧥"}
+                            </span>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{card.category}</p>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Like / Pass overlays */}
                 <motion.div
                     style={{ opacity: likeOpacity }}
-                    className="absolute top-6 left-6 bg-green-500 text-white font-black text-xl px-4 py-2 rounded-xl border-4 border-green-400 rotate-[-8deg]"
+                    className="absolute top-6 left-6 bg-green-500 text-white font-black text-xl px-4 py-2 rounded-xl border-4 border-green-400 rotate-[-8deg] z-10"
                 >
                     LIKE ♥
                 </motion.div>
                 <motion.div
                     style={{ opacity: passOpacity }}
-                    className="absolute top-6 right-6 bg-red-500 text-white font-black text-xl px-4 py-2 rounded-xl border-4 border-red-400 rotate-[8deg]"
+                    className="absolute top-6 right-6 bg-red-500 text-white font-black text-xl px-4 py-2 rounded-xl border-4 border-red-400 rotate-[8deg] z-10"
                 >
                     PASS ✕
                 </motion.div>
 
                 {/* Bottom metadata */}
-                <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+                <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/70 to-transparent z-10">
                     <p className="text-white font-bold text-sm">{card.label}</p>
                     <p className="text-white/70 text-xs">{card.category}</p>
                 </div>
@@ -92,31 +104,27 @@ function SwipeCardItem({
     );
 }
 
-// ─── Generate mock swipe cards ────────────────────────────────────────────────
+// ─── Static fallback cards (if catalog empty) ─────────────────────────────────
 
-const MOCK_ITEMS = [
+const FALLBACK_ITEMS = [
     { cat: "Polos", labels: ["Classic Polo", "Performance Polo", "Essential Polo"] },
-    { cat: "Tees", labels: ["Crew Neck Tee", "Pocket Tee", "Striped Tee"] },
+    { cat: "T-Shirts", labels: ["Crew Neck Tee", "Pocket Tee", "Striped Tee"] },
     { cat: "Casual Shirts", labels: ["Check Shirt", "Oxford Shirt", "Linen Shirt"] },
     { cat: "Shorts", labels: ["Chino Shorts", "Cargo Shorts", "Swim Shorts"] },
     { cat: "Activewear", labels: ["Gym Tee", "Track Pants", "Sports Shorts"] },
-    { cat: "Footwear", labels: ["Sneakers", "Boots", "Slides"] },
 ];
 
-function generateCards(count: number): SwipeCardData[] {
-    const cards: SwipeCardData[] = [];
-    for (let i = 0; i < count; i++) {
-        const group = MOCK_ITEMS[i % MOCK_ITEMS.length];
-        const label = group.labels[Math.floor(i / MOCK_ITEMS.length) % group.labels.length];
-        cards.push({
-            id: `card-${i}`,
+function buildFallbackCards(count: number): SwipeCardData[] {
+    return Array.from({ length: count }, (_, i) => {
+        const group = FALLBACK_ITEMS[i % FALLBACK_ITEMS.length];
+        return {
+            id: `fallback-${i}`,
             image: "",
-            label,
+            label: group.labels[Math.floor(i / FALLBACK_ITEMS.length) % group.labels.length],
             category: group.cat,
-            tags: [group.cat.toLowerCase(), "big-tall", "casual"],
-        });
-    }
-    return cards;
+            tags: [group.cat.toLowerCase(), "big-tall"],
+        };
+    });
 }
 
 // ─── Main Step ────────────────────────────────────────────────────────────────
@@ -143,11 +151,38 @@ export function StepStylePrefs({
     saving?: boolean;
 }) {
     const [mode, setMode] = useState<"choose" | "categories" | "swipe">("choose");
-    const [cards] = useState(() => generateCards(12));
+    const [cards, setCards] = useState<SwipeCardData[]>([]);
+    const [cardsLoading, setCardsLoading] = useState(false);
+
+    // Fetch real swipe candidates when user chooses swipe mode
+    useEffect(() => {
+        if (mode !== "swipe" || cards.length > 0) return;
+        setCardsLoading(true);
+
+        fetch("/api/gateway/swipe/candidates?category=tops,shorts,casual&limit=12")
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.candidates && data.candidates.length > 0) {
+                    const realCards: SwipeCardData[] = data.candidates.map((c: any) => ({
+                        id: c.productId,
+                        image: c.primaryImageUrl,
+                        label: c.title,
+                        category: c.category.split("|").pop() ?? c.category,
+                        tags: c.tags ?? [],
+                    }));
+                    setCards(realCards);
+                } else {
+                    // Fallback: static cards if catalog not yet seeded
+                    setCards(buildFallbackCards(12));
+                }
+            })
+            .catch(() => setCards(buildFallbackCards(12)))
+            .finally(() => setCardsLoading(false));
+    }, [mode, cards.length]);
 
     const totalSwiped = swipeLiked.length + swipePassed.length;
     const remainingCards = cards.slice(totalSwiped);
-    const swipeDone = totalSwiped >= cards.length;
+    const swipeDone = cards.length > 0 && totalSwiped >= cards.length;
 
     const handleLike = useCallback(() => {
         if (remainingCards[0]) onSwipeLike(remainingCards[0]);
@@ -208,27 +243,18 @@ export function StepStylePrefs({
                             </div>
                             <div>
                                 <p className="font-black text-[#0a0a0a] text-base mb-1">Swipe style quiz</p>
-                                <p className="text-sm text-gray-500">Swipe through styles like/pass for deep personalisation.</p>
+                                <p className="text-sm text-gray-500">Swipe through real Kingsize styles — like/pass for deep personalisation.</p>
                             </div>
                         </div>
                     </motion.button>
 
-                    <NavButtons
-                        onBack={onBack}
-                        onNext={onNext}
-                        nextLabel="Skip →"
-                        showBack={true}
-                    />
+                    <NavButtons onBack={onBack} onNext={onNext} nextLabel="Skip →" showBack={true} />
                 </div>
             )}
 
             {/* Category grid */}
             {mode === "categories" && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col flex-1"
-                >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col flex-1">
                     <p className="text-sm font-semibold text-gray-700 mb-4">What do you wear most?</p>
                     <div className="grid grid-cols-2 gap-2.5 flex-1">
                         {STYLE_CATEGORIES.map((cat, i) => {
@@ -261,12 +287,13 @@ export function StepStylePrefs({
 
             {/* Swipe mode */}
             {mode === "swipe" && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col flex-1"
-                >
-                    {swipeDone ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col flex-1">
+                    {cardsLoading ? (
+                        <div className="flex-1 flex items-center justify-center gap-3">
+                            <div className="w-6 h-6 border-2 border-gray-200 border-t-[#0a0a0a] rounded-full animate-spin" />
+                            <span className="text-sm text-gray-400">Loading styles…</span>
+                        </div>
+                    ) : swipeDone ? (
                         <div className="flex flex-col items-center justify-center flex-1 text-center gap-4">
                             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
                                 <span className="text-3xl">✓</span>
@@ -292,7 +319,7 @@ export function StepStylePrefs({
                                 <div className="h-1.5 bg-gray-100 rounded-full w-32 overflow-hidden">
                                     <div
                                         className="h-full bg-[#0a0a0a] rounded-full transition-all duration-300"
-                                        style={{ width: `${(totalSwiped / cards.length) * 100}%` }}
+                                        style={{ width: cards.length > 0 ? `${(totalSwiped / cards.length) * 100}%` : "0%" }}
                                     />
                                 </div>
                             </div>
@@ -311,23 +338,13 @@ export function StepStylePrefs({
                                             }}
                                         >
                                             {i === 1 ? (
-                                                <SwipeCardItem
-                                                    card={card}
-                                                    onLike={handleLike}
-                                                    onPass={handlePass}
-                                                />
+                                                <SwipeCardItem card={card} onLike={handleLike} onPass={handlePass} />
                                             ) : (
-                                                <div className="w-full h-full bg-gray-200 rounded-2xl" />
+                                                <div className="w-full h-full bg-gray-100 rounded-2xl border border-gray-200" />
                                             )}
                                         </motion.div>
                                     ))}
                                 </AnimatePresence>
-
-                                {remainingCards.length === 0 && (
-                                    <div className="flex items-center justify-center h-full">
-                                        <p className="text-gray-400 text-sm">All done!</p>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Buttons */}

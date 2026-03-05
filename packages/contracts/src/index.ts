@@ -62,11 +62,97 @@ export interface IRecommendationResult {
     provider: "groq" | "huggingface" | "rules-fallback";
 }
 
+// ─── Extended Catalog Types (CI-ready, Mock adapter first) ──────────────────
+
+export interface ICatalogImage {
+    url: string;
+    alt: string;
+    position: number;
+    colourCode?: string;
+    isPrimary: boolean;
+}
+
+export interface ICatalogVariant {
+    id: string;
+    sku: string;
+    colour: string;
+    colourCode: string;
+    sizeLabel: string;
+    sizeType: 'X' | 'CM' | 'NECK' | 'WAIST' | 'EU' | 'US';
+    price: number;
+    compareAtPrice?: number;
+    stockTotal: number;
+}
+
+export interface ICatalogSizeGuideRow {
+    size: string;
+    chest?: string;
+    waist?: string;
+    hips?: string;
+    inseam?: string;
+    neck?: string;
+    sleeve?: string;
+}
+
+export interface ICatalogSizeGuide {
+    guideType: string;
+    rows: ICatalogSizeGuideRow[];
+    notes: string;
+}
+
+export interface ICatalogProduct {
+    id: string;
+    brand: string;
+    title: string;
+    slug: string;
+    descriptionHtml: string;
+    fitType: 'big' | 'tall' | 'big-tall' | 'all';
+    isLive: boolean;
+    categoryPaths: string[];
+    filters: Record<string, string[]>;
+    images: ICatalogImage[];
+    variants: ICatalogVariant[];
+    sizeGuide?: ICatalogSizeGuide;
+    // Convenience fields
+    primaryImageUrl: string;
+    price: number;
+    colours: string[];
+    sizes: string[];
+}
+
+export interface ISwipeCandidate {
+    productId: string;
+    slug: string;
+    brand: string;
+    title: string;
+    primaryImageUrl: string;
+    colour: string;
+    category: string;
+    tags: string[];
+}
+
+export interface IProductFilters {
+    category?: string;
+    brand?: string;
+    fit?: string;
+    q?: string;
+    limit?: number;
+    offset?: number;
+}
+
 // ─── Provider Interfaces (POS Plug-and-Play Contracts) ────────────────────────
 
 export interface IProductProvider {
     getProducts(filters?: { category?: string; brand?: string }): Promise<IProduct[]>;
     getProductById(id: string): Promise<IProduct | null>;
+}
+
+export interface ICatalogProvider {
+    listProducts(filters?: IProductFilters): Promise<ICatalogProduct[]>;
+    getProductBySlug(slug: string): Promise<ICatalogProduct | null>;
+    listCategories(): Promise<{ path: string; count: number }[]>;
+    listBrands(): Promise<string[]>;
+    getSwipeCandidates(opts: { categories: string[]; limit: number; seed?: string }): Promise<ISwipeCandidate[]>;
 }
 
 export interface IInventoryProvider {

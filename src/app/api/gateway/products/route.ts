@@ -1,33 +1,29 @@
-/**
- * Gateway Products Route
- * All web UI product fetching must go through this route.
- * Swap the provider by changing INTEGRATION_PROVIDER in .env
- */
-import { NextResponse } from "next/server";
-import { MockProductProvider } from "@/integrations/mock/MockProductProvider";
-import { CounterIntelligenceProductProvider } from "@/integrations/counterintelligence/CounterIntelligenceProductProvider";
-import type { IProductProvider } from "@kingsize/contracts";
+import { NextRequest, NextResponse } from "next/server";
+import { getCatalogProvider } from "@/integrations/ci/mockCiCatalog";
 
-function getProvider(): IProductProvider {
-    const integration = process.env.INTEGRATION_PROVIDER ?? "mock";
-    if (integration === "counterintelligence") {
-        return new CounterIntelligenceProductProvider();
-    }
-    return new MockProductProvider();
-}
+// GET /api/gateway/products?category=&brand=&fit=&q=&limit=&offset=
+export async function GET(request: NextRequest) {
+    const { searchParams } = new URL(request.url);
 
-export async function GET(request: Request) {
+    const filters = {
+        category: searchParams.get("category") ?? undefined,
+        brand: searchParams.get("brand") ?? undefined,
+        fit: searchParams.get("fit") ?? undefined,
+        q: searchParams.get("q") ?? undefined,
+        limit: searchParams.has("limit") ? parseInt(searchParams.get("limit")!) : 48,
+        offset: searchParams.has("offset") ? parseInt(searchParams.get("offset")!) : 0,
+    };
+
     try {
-        const { searchParams } = new URL(request.url);
-        const category = searchParams.get("category") ?? undefined;
-        const brand = searchParams.get("brand") ?? undefined;
-
-        const provider = getProvider();
-        const products = await provider.getProducts({ category, brand });
-
-        return NextResponse.json({ success: true, data: products });
-    } catch (error) {
-        console.error("[gateway/products] Error:", error);
-        return NextResponse.json({ success: false, error: "Failed to fetch products" }, { status: 500 });
+        const catalog = getCatalogProvider();
+        const products = await catalog.listProducts(filters);
+        return NextResponse.json({ products, count: products.length }, {
+            headers: {
+                "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+            },
+        });
+    } catch (err: any) {
+        console.error("[gateway/products] GET error:", err.message);
+        return NextResponse.json({ products: [], count: 0, error: "Catalog unavailable" }, { status: 503 });
     }
 }
