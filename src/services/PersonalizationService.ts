@@ -140,36 +140,26 @@ export class PersonalizationService {
         let likedProductIds: string[] = [];
 
         if (opts.customerId) {
-            // ── Logged-in: use preference profile ────────────────────────────
-            const prefRow = await dbQueryOne<{
-                style_tags: Record<string, number>;
-                category_affinity: Record<string, number>;
-                liked_product_ids: string[];
-            }>(
-                `SELECT style_tags, category_affinity, liked_product_ids
-                 FROM preference_profiles WHERE customer_id = $1 LIMIT 1`,
+            // ── Logged-in: use preference_vectors for stored affinity ─────────
+            const prefRow = await dbQueryOne<{ vector_embedding: any }>(
+                `SELECT vector_embedding FROM preference_vectors WHERE user_id = $1 LIMIT 1`,
                 [opts.customerId]
             );
-            affinityTags = prefRow?.style_tags ?? {};
-            preferredCategories = Object.entries(prefRow?.category_affinity ?? {})
-                .sort(([, a], [, b]) => b - a).slice(0, 3).map(([k]) => k);
-            likedProductIds = prefRow?.liked_product_ids ?? [];
-        } else {
-            // ── Logged-out: aggregate session signals ─────────────────────────
-            const signals = await dbQuery<{
-                entity_type: string;
-                entity_label: string;
-                signal_type: string;
-            }>(
-                `SELECT entity_type, entity_label, signal_type
-                 FROM session_signals WHERE session_id = $1 ORDER BY created_at DESC LIMIT 100`,
-                [opts.sessionId]
+            const embedding = typeof prefRow?.vector_embedding === "string"
+                ? JSON.parse(prefRow.vector_embedding)
+                : (prefRow?.vector_embedding ?? {});
+            affinityTags = embedding.style_tags ?? {};
+            preferredCategories = Object.entries((embedding.category_affinity ?? {}) as Record<string, number>)
+                .sort(([, a], [, b]) => (b as number) - (a as number)).slice(0, 3).map(([k]) => k);
+            // Liked product IDs from swipe_events
+            const swipes = await dbQuery<{ product_id: string }>(
+                `SELECT product_id FROM swipe_events WHERE user_id = $1 AND action = 'like' ORDER BY created_at DESC LIMIT 50`,
+                [opts.customerId]
             );
-            signals.forEach((sig) => {
-                if (sig.entity_type === "category" && sig.entity_label) {
-                    affinityTags[sig.entity_label] = (affinityTags[sig.entity_label] ?? 0) + 2;
-                }
-            });
+            likedProductIds = swipes.map((s) => s.product_id);
+        } else {
+            // ── Logged-out: no persistent signals (anonymous) ─────────────────
+            // Anonymous signals are kept client-side only in this architecture
         }
 
         // Score and rank all products
@@ -206,15 +196,15 @@ export class PersonalizationService {
 
         // Fire Klaviyo event async (consent-gated)
         if (opts.customerId && isKlaviyoEventAllowed(opts.consentLevel)) {
-            // Look up email for the event
-            const customer = await dbQueryOne<{ email: string }>(
-                "SELECT email FROM customers WHERE id = $1",
+            // Look up email from users table
+            const user = await dbQueryOne<{ email: string }>(
+                "SELECT email FROM users WHERE id = $1",
                 [opts.customerId]
             );
-            if (customer?.email) {
+            if (user?.email) {
                 void getKlaviyoClient().trackEvent({
                     event: "Onsite Recommendations Computed",
-                    profileEmail: customer.email,
+                    profileEmail: user.email,
                     properties: {
                         fit_type: opts.fitType,
                         hero_pick_count: heroPicks.length,
@@ -235,18 +225,10 @@ export class PersonalizationService {
         const ttlSecs = tier === "auth" ? TTL_AUTH_SECS : TTL_ANON_SECS;
         await cache.set(cacheKey, result, ttlSecs);
 
-        const expiresAt = new Date(Date.now() + ttlSecs * 1000).toISOString();
-        await dbQuery(
-            `INSERT INTO recommendation_snapshots (cache_key, payload, expires_at, fit_type)
-             VALUES ($1, $2, $3, $4)
-             ON CONFLICT (cache_key) DO UPDATE
-             SET payload = EXCLUDED.payload, expires_at = EXCLUDED.expires_at,
-                 computed_at = NOW(), fit_type = EXCLUDED.fit_type`,
-            [cacheKey, JSON.stringify(result), expiresAt, result.meta.fitType]
-        );
+        // Recommendations are cached in-memory/Redis only — no DB snapshot table
     }
 
-    /** Update preference profile from swipe results */
+    /** Update preference vectors and swipe events from swipe results */
     async applySwipeResults(opts: {
         customerId?: string;
         sessionId: string;
@@ -264,40 +246,43 @@ export class PersonalizationService {
             c.tags.forEach((t) => { tagCounts[t] = (tagCounts[t] ?? 0) - 1; });
         });
 
-        const likedIds = opts.liked.map((c) => c.id);
-
         if (opts.customerId) {
+            // 1. Record individual swipe events
+            for (const item of opts.liked) {
+                await dbQuery(
+                    `INSERT INTO swipe_events (user_id, product_id, action) VALUES ($1, $2, 'like')`,
+                    [opts.customerId, item.id]
+                );
+            }
+            for (const item of opts.passed) {
+                await dbQuery(
+                    `INSERT INTO swipe_events (user_id, product_id, action) VALUES ($1, $2, 'skip')`,
+                    [opts.customerId, item.id]
+                );
+            }
+
+            // 2. Update / merge preference_vectors
+            const newEmbedding = JSON.stringify({
+                style_tags: tagCounts,
+                category_affinity: catCounts,
+            });
             await dbQuery(
-                `INSERT INTO preference_profiles
-                    (customer_id, style_tags, category_affinity, liked_product_ids)
-                 VALUES ($1, $2, $3, $4)
-                 ON CONFLICT (customer_id)
-                 DO UPDATE SET
-                    style_tags = preference_profiles.style_tags || EXCLUDED.style_tags,
-                    category_affinity = preference_profiles.category_affinity || EXCLUDED.category_affinity,
-                    liked_product_ids = array_cat(preference_profiles.liked_product_ids, EXCLUDED.liked_product_ids),
+                `INSERT INTO preference_vectors (user_id, vector_embedding, updated_at)
+                 VALUES ($1, $2, NOW())
+                 ON CONFLICT (user_id) DO UPDATE SET
+                    vector_embedding = preference_vectors.vector_embedding || $2::jsonb,
                     updated_at = NOW()`,
-                [opts.customerId, JSON.stringify(tagCounts), JSON.stringify(catCounts), likedIds]
+                [opts.customerId, newEmbedding]
             );
-            // Bust snapshot
             await cache.del(`recs:cust:${opts.customerId}`);
         } else {
-            await dbQuery(
-                `INSERT INTO preference_profiles (session_id, style_tags, category_affinity, liked_product_ids)
-                 VALUES ($1, $2, $3, $4)
-                 ON CONFLICT (session_id)
-                 DO UPDATE SET
-                    style_tags = preference_profiles.style_tags || EXCLUDED.style_tags,
-                    category_affinity = preference_profiles.category_affinity || EXCLUDED.category_affinity,
-                    liked_product_ids = array_cat(preference_profiles.liked_product_ids, EXCLUDED.liked_product_ids),
-                    updated_at = NOW()`,
-                [opts.sessionId, JSON.stringify(tagCounts), JSON.stringify(catCounts), likedIds]
-            );
+            // Anonymous users — no DB persistence; swipe signals stay client-side
             await cache.del(`recs:sess:${opts.sessionId}`);
         }
     }
 
-    /** Record a session signal (view, search, filter, category click) */
+    /** Record a session signal (view, search, filter, category click)
+     * NOTE: session_signals table not in production schema — busts cache only */
     async recordSignal(opts: {
         sessionId: string;
         signalType: string;
@@ -306,12 +291,6 @@ export class PersonalizationService {
         entityLabel?: string;
         fitContext?: string;
     }): Promise<void> {
-        await dbQuery(
-            `INSERT INTO session_signals
-                (session_id, signal_type, entity_type, entity_id, entity_label, fit_context)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [opts.sessionId, opts.signalType, opts.entityType, opts.entityId, opts.entityLabel, opts.fitContext]
-        );
         // Bust recs snapshot so next load recomputes with new signal
         await cache.del(`recs:sess:${opts.sessionId}`);
     }
