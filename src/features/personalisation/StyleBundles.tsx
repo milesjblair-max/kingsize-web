@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import type { IRecommendationResponse, StyleBundle } from "@/services/PersonalizationService";
 import type { IProduct } from "@kingsize/contracts";
+import { getPrimaryImage } from "@/utils/image";
 
 // ─── Product card (shared) ────────────────────────────────────────────────────
 
 function ProductCard({ product }: { product: IProduct }) {
+    const [imgError, setImgError] = useState(false);
     return (
         <div
             className="group cursor-pointer"
@@ -19,13 +21,14 @@ function ProductCard({ product }: { product: IProduct }) {
             }}
         >
             <div style={{ aspectRatio: "3/4", background: "#E5E7EB", position: "relative" }}>
-                {product.imageUrl && (
+                {product && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                        src={product.imageUrl}
+                        src={imgError ? "/images/placeholder.png" : getPrimaryImage(product)}
                         alt={product.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         loading="lazy"
+                        onError={() => setImgError(true)}
                     />
                 )}
                 {!product.inStock && (

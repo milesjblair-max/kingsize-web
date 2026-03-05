@@ -6,6 +6,7 @@ import Image from "next/image";
 import type { SwipeCardData } from "./useOnboarding";
 import { NavButtons } from "./OnboardingShell";
 import { STYLE_CATEGORIES } from "./useOnboarding";
+import { getPrimaryImage } from "@/utils/image";
 
 // ─── Swipe Card sub-component ─────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ function SwipeCardItem({
     onLike: () => void;
     onPass: () => void;
 }) {
+    const [imgError, setImgError] = useState(false);
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-150, 150], [-20, 20]);
     const likeOpacity = useTransform(x, [20, 80], [0, 1]);
@@ -57,12 +59,13 @@ function SwipeCardItem({
                 {/* Product image or placeholder */}
                 {hasRealImage ? (
                     <Image
-                        src={card.image}
+                        src={imgError ? "/images/placeholder.png" : getPrimaryImage(card)}
                         alt={card.label}
                         fill
                         className="object-cover"
                         sizes="(max-width: 480px) 100vw, 440px"
                         priority
+                        onError={() => setImgError(true)}
                     />
                 ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
@@ -267,8 +270,8 @@ export function StepStylePrefs({
                                     transition={{ delay: i * 0.04 }}
                                     onClick={() => onCategoryToggle(cat)}
                                     className={`p-4 rounded-xl border-2 font-semibold text-sm transition-all text-left ${selected
-                                            ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-md"
-                                            : "border-gray-200 bg-white text-[#0a0a0a] hover:border-gray-300"
+                                        ? "border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-md"
+                                        : "border-gray-200 bg-white text-[#0a0a0a] hover:border-gray-300"
                                         }`}
                                 >
                                     {cat}

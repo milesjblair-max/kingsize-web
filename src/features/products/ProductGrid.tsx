@@ -1,5 +1,8 @@
-import Image from "next/image";
+"use client";
 
+import Image from "next/image";
+import { useState } from "react";
+import { getPrimaryImage } from "@/utils/image";
 const NEW_ARRIVALS = [
     {
         id: 1,
@@ -32,6 +35,13 @@ const NEW_ARRIVALS = [
 ];
 
 export const ProductGrid = () => {
+    // Keep track of image errors per product id
+    const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+    const handleImageError = (id: string | number) => {
+        setImageErrors(prev => ({ ...prev, [String(id)]: true }));
+    };
+
     return (
         <section className="px-6 py-12 max-w-[1400px] mx-auto">
             <h2 className="text-3xl font-bold mb-8">New Arrivals</h2>
@@ -40,11 +50,12 @@ export const ProductGrid = () => {
                     <div key={product.id} className="group cursor-pointer">
                         <div className="relative aspect-[3/4] bg-gray-100 mb-4 overflow-hidden rounded-sm">
                             <Image
-                                src={product.image}
+                                src={imageErrors[String(product.id)] ? "/images/placeholder.png" : getPrimaryImage(product)}
                                 alt={product.name}
                                 fill
                                 className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                onError={() => handleImageError(product.id)}
                             />
                         </div>
                         <h3 className="font-bold text-lg mb-1">{product.brand}</h3>
