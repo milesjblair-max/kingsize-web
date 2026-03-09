@@ -278,7 +278,9 @@ export const Recommendations = () => {
             })
             .catch(err => {
                 console.error("Failed to load recommendations", err);
-                setDataState("error");
+                // Graceful degradation: show the blurred teaser even on API failure
+                // to entice users to log in or try again later without a red error box.
+                setDataState("loggedOut");
             });
 
     }, [authLoading, isAuthenticated, profile?.email]);

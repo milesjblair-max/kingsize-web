@@ -14,10 +14,18 @@ export function ProductDisplay({ product }: { product: ICatalogProduct }) {
 
     const handleImageError = () => {
         if (retryCount === 0) {
-            if (!finalSrc.includes("_FRONT") && finalSrc.endsWith(".jpg") && !finalSrc.startsWith("data:")) {
-                setFinalSrc(finalSrc.replace(".jpg", "_FRONT.jpg"));
+            let nextSrc = finalSrc;
+            if (finalSrc.includes("_FRONT")) {
+                nextSrc = finalSrc.replace("_FRONT", "");
+            } else if (finalSrc.endsWith(".jpg")) {
+                nextSrc = finalSrc.replace(".jpg", "_FRONT.jpg");
             }
-            setRetryCount(1);
+            if (nextSrc !== finalSrc && !nextSrc.startsWith("data:")) {
+                setFinalSrc(nextSrc);
+                setRetryCount(1);
+            } else {
+                setImgError(true);
+            }
         } else {
             setImgError(true);
         }

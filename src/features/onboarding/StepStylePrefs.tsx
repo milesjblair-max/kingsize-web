@@ -45,19 +45,31 @@ function SwipeCardItem({
     }, [onLike, onPass, isTop]);
 
     const rawUrl = getPrimaryImage(card);
-    // Defensively check if URL is valid or empty
-    const hasRealImage = Boolean(rawUrl && rawUrl.trim() !== "" && rawUrl !== "/images/placeholder.png");
+    const [finalSrc, setFinalSrc] = useState(rawUrl);
 
-    // Add cache-busting query param on retry
-    const finalSrc = imgError || !hasRealImage
-        ? "/images/placeholder.png"
-        : retryCount > 0
-            ? `${rawUrl}${rawUrl.includes('?') ? '&' : '?'}retry=${retryCount}`
-            : rawUrl;
+    // Sync state if card changes
+    useEffect(() => {
+        setFinalSrc(getPrimaryImage(card));
+        setRetryCount(0);
+        setImgError(false);
+    }, [card.id]);
 
     const handleImageError = () => {
-        if (retryCount < 1) {
-            setRetryCount(1);
+        if (retryCount === 0) {
+            let nextSrc = finalSrc;
+            // Try different naming variations to bridge the gap between DB URLs and actual files
+            if (finalSrc.includes("_FRONT")) {
+                nextSrc = finalSrc.replace("_FRONT", "");
+            } else if (finalSrc.endsWith(".jpg")) {
+                nextSrc = finalSrc.replace(".jpg", "_FRONT.jpg");
+            }
+
+            if (nextSrc !== finalSrc && !nextSrc.startsWith("data:")) {
+                setFinalSrc(nextSrc);
+                setRetryCount(1);
+            } else {
+                setImgError(true);
+            }
         } else {
             setImgError(true);
         }
@@ -76,17 +88,17 @@ function SwipeCardItem({
         >
             <div className="w-full aspect-[3/4] bg-white rounded-2xl overflow-hidden relative border border-gray-100 shadow-md">
                 {/* Product image or placeholder */}
-                {hasRealImage || imgError ? (
+                {!imgError ? (
                     <Image
                         src={finalSrc}
                         alt={card.label}
                         fill
-                        className={`object-cover object-top ${imgError ? "object-contain p-8 opacity-50" : ""}`}
+                        className="object-cover object-top transition-all duration-300"
                         sizes="(max-width: 480px) 100vw, 440px"
                         priority={isTop}
                         loading={isTop ? undefined : "lazy"}
                         onError={handleImageError}
-                        unoptimized={imgError || retryCount > 0}
+                        unoptimized={retryCount > 0}
                     />
                 ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
