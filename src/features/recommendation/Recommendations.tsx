@@ -57,6 +57,20 @@ const STYLE_TILES = [
 
 const StyleTile = ({ tile }: { tile: typeof STYLE_TILES[number] }) => {
     const [imgError, setImgError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
+    const [finalSrc, setFinalSrc] = useState(tile.image);
+
+    const handleImageError = () => {
+        if (retryCount === 0) {
+            if (!finalSrc.includes("_FRONT") && finalSrc.endsWith(".jpg")) {
+                setFinalSrc(finalSrc.replace(".jpg", "_FRONT.jpg"));
+            }
+            setRetryCount(1);
+        } else {
+            setImgError(true);
+        }
+    };
+
     return (
         <Link
             href={tile.href}
@@ -65,12 +79,12 @@ const StyleTile = ({ tile }: { tile: typeof STYLE_TILES[number] }) => {
         >
             <div className="absolute inset-0">
                 <Image
-                    src={imgError ? "/images/placeholder.png" : tile.image}
+                    src={imgError ? getPrimaryImage({}) : finalSrc}
                     alt={tile.label}
                     fill
-                    className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    className={`object-cover object-top transition-transform duration-500 group-hover:scale-105 ${imgError ? "opacity-20 p-12 object-contain" : ""}`}
                     sizes="(max-width: 768px) 50vw, 20vw"
-                    onError={() => setImgError(true)}
+                    onError={handleImageError}
                 />
                 <div
                     className="absolute inset-0"
@@ -128,6 +142,19 @@ const SignUpNudge = () => (
 
 const RecommendedProductCard = ({ product, blur }: { product?: ICatalogProduct, blur?: boolean }) => {
     const [imgError, setImgError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
+    const [finalSrc, setFinalSrc] = useState(() => getPrimaryImage(product));
+
+    const handleImageError = () => {
+        if (retryCount === 0) {
+            if (finalSrc && !finalSrc.includes("_FRONT") && finalSrc.endsWith(".jpg") && !finalSrc.startsWith("data:")) {
+                setFinalSrc(finalSrc.replace(".jpg", "_FRONT.jpg"));
+            }
+            setRetryCount(1);
+        } else {
+            setImgError(true);
+        }
+    };
 
     if (!product) {
         return (
@@ -139,12 +166,12 @@ const RecommendedProductCard = ({ product, blur }: { product?: ICatalogProduct, 
         <Link href={`/products/${product.slug}`} className={`group flex flex-col ${blur ? 'blur-[4px] pointer-events-none select-none' : ''}`}>
             <div className="relative aspect-[3/4] bg-gray-100 mb-3 overflow-hidden rounded-sm">
                 <Image
-                    src={imgError ? "/images/placeholder.png" : getPrimaryImage(product)}
+                    src={imgError ? getPrimaryImage({}) : finalSrc}
                     alt={product.title}
                     fill
-                    className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    className={`object-cover object-top transition-transform duration-500 group-hover:scale-105 ${imgError ? "opacity-30 p-8 object-contain" : ""}`}
                     sizes="(max-width: 768px) 50vw, 25vw"
-                    onError={() => setImgError(true)}
+                    onError={handleImageError}
                 />
             </div>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{product.brand}</h3>
@@ -167,10 +194,10 @@ const DynamicBundleCard = ({ outfit, blur }: { outfit: any, blur?: boolean }) =>
                 {outfit.products.map((p: any, i: number) => (
                     <div key={i} className="relative flex-1">
                         <Image
-                            src={imgErrors[i] ? "/images/placeholder.png" : getPrimaryImage(p)}
+                            src={imgErrors[i] ? getPrimaryImage({}) : getPrimaryImage(p)}
                             alt={p.title}
                             fill
-                            className="object-cover object-top"
+                            className={`object-cover object-top ${imgErrors[i] ? "opacity-20 p-4 object-contain" : ""}`}
                             sizes="150px"
                             onError={() => handleImgError(i)}
                         />

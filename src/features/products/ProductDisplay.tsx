@@ -9,6 +9,19 @@ import type { ICatalogProduct } from "@kingsize/contracts";
 
 export function ProductDisplay({ product }: { product: ICatalogProduct }) {
     const [imgError, setImgError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
+    const [finalSrc, setFinalSrc] = useState(() => getPrimaryImage(product));
+
+    const handleImageError = () => {
+        if (retryCount === 0) {
+            if (!finalSrc.includes("_FRONT") && finalSrc.endsWith(".jpg") && !finalSrc.startsWith("data:")) {
+                setFinalSrc(finalSrc.replace(".jpg", "_FRONT.jpg"));
+            }
+            setRetryCount(1);
+        } else {
+            setImgError(true);
+        }
+    };
 
     // Trigger product view tracking on mount
     useEffect(() => {
@@ -31,12 +44,12 @@ export function ProductDisplay({ product }: { product: ICatalogProduct }) {
                 {/* Image Gallery (Single Image for simplicity) */}
                 <div className="relative aspect-[3/4] bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
                     <Image
-                        src={imgError ? "/images/placeholder.png" : getPrimaryImage(product)}
+                        src={imgError ? getPrimaryImage({}) : finalSrc}
                         alt={product.title}
                         fill
-                        className="object-cover object-top"
+                        className={`object-cover object-top ${imgError ? "opacity-30 p-12 object-contain" : ""}`}
                         sizes="(max-width: 768px) 100vw, 50vw"
-                        onError={() => setImgError(true)}
+                        onError={handleImageError}
                         priority
                     />
                 </div>

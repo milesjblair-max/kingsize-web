@@ -127,8 +127,21 @@ export const HorizontalProductRail = ({
 
 function RailProductCard({ product }: { product: ICatalogProduct }) {
     const [imgError, setImgError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
+    const [finalSrc, setFinalSrc] = useState(() => getPrimaryImage(product));
 
-    // If implementing tracking on click, we intercept it here to fire POST /api/gateway/events/product-view
+    const handleImageError = () => {
+        if (retryCount === 0) {
+            // Match the smart-retry logic from the style quiz
+            if (!finalSrc.includes("_FRONT") && finalSrc.endsWith(".jpg") && !finalSrc.startsWith("data:")) {
+                setFinalSrc(finalSrc.replace(".jpg", "_FRONT.jpg"));
+            }
+            setRetryCount(1);
+        } else {
+            setImgError(true);
+        }
+    };
+
     const trackClick = () => {
         fetch("/api/gateway/events/product-view", {
             method: "POST",
@@ -145,12 +158,12 @@ function RailProductCard({ product }: { product: ICatalogProduct }) {
         >
             <div className="relative aspect-[3/4] bg-gray-50 mb-2 overflow-hidden rounded-sm">
                 <Image
-                    src={imgError ? "/images/placeholder.png" : getPrimaryImage(product)}
+                    src={imgError ? getPrimaryImage({}) : finalSrc}
                     alt={product.title}
                     fill
-                    className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+                    className={`object-cover object-top transition-transform duration-500 group-hover:scale-[1.03] ${imgError ? "opacity-30 p-8 object-contain" : ""}`}
                     sizes="(max-width: 640px) 150px, (max-width: 768px) 180px, 220px"
-                    onError={() => setImgError(true)}
+                    onError={handleImageError}
                 />
             </div>
             <div className="flex flex-col flex-grow text-left">
