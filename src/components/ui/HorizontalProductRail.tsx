@@ -47,12 +47,12 @@ export const HorizontalProductRail = ({
     }
 
     return (
-        <section className="mb-12 md:mb-16 relative">
+        <section className="mb-8 md:mb-12 relative">
             {/* Header / Editorial Title */}
-            <div className="flex items-end justify-between mb-6">
+            <div className="flex items-end justify-between mb-4">
                 <div>
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 leading-tight">{title}</h2>
-                    <p className="text-sm font-medium text-gray-500 uppercase tracking-widest">{subtitle}</p>
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-0.5 leading-tight">{title}</h2>
+                    <p className="text-[13px] font-medium text-gray-500">{subtitle}</p>
                 </div>
                 {seeMoreLink && products.length > 4 && (
                     <Link
@@ -69,14 +69,14 @@ export const HorizontalProductRail = ({
                 {/* Horizontal Scroll Area */}
                 <div
                     ref={scrollRef}
-                    className={`flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 pb-4 ${blurState ? "blur-sm pointer-events-none select-none" : ""
+                    className={`flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-3 pb-4 ${blurState ? "blur-md pointer-events-none select-none opacity-40" : ""
                         }`}
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                     {products.map((product) => (
                         <div
                             key={product.id}
-                            className="snap-start flex-none w-[180px] sm:w-[220px] md:w-[240px] lg:w-[260px]"
+                            className="snap-start flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px]"
                         >
                             <RailProductCard product={product} />
                         </div>
@@ -85,8 +85,8 @@ export const HorizontalProductRail = ({
 
                 {/* Optional Blur Overlay */}
                 {blurState && overlayContent && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-auto">
-                        <div className="relative z-20 w-full max-w-lg mx-auto pointer-events-auto px-4 shadow-xl">
+                    <div className="absolute inset-x-0 top-0 bottom-4 z-10 flex items-center justify-center pointer-events-auto">
+                        <div className="relative z-20 w-full max-w-lg mx-auto pointer-events-auto px-4 shadow-2xl">
                             {overlayContent}
                         </div>
                     </div>
@@ -143,19 +143,19 @@ function RailProductCard({ product }: { product: ICatalogProduct }) {
             className="group flex flex-col h-full"
             onClick={trackClick}
         >
-            <div className="relative aspect-[3/4] bg-gray-100 mb-3 overflow-hidden rounded-sm">
+            <div className="relative aspect-[3/4] bg-gray-50 mb-2 overflow-hidden rounded-sm">
                 <Image
                     src={imgError ? "/images/placeholder.png" : getPrimaryImage(product)}
                     alt={product.title}
                     fill
-                    className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                    sizes="(max-width: 640px) 180px, (max-width: 768px) 220px, 260px"
+                    className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+                    sizes="(max-width: 640px) 150px, (max-width: 768px) 180px, 220px"
                     onError={() => setImgError(true)}
                 />
             </div>
-            <div className="flex flex-col flex-grow">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 line-clamp-1">{product.brand}</h3>
-                <p className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-2">{product.title}</p>
+            <div className="flex flex-col flex-grow text-left">
+                <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-0.5 line-clamp-1">{product.brand}</h3>
+                <p className="text-[13px] text-gray-900 line-clamp-2 leading-tight mb-1.5">{product.title}</p>
                 <div className="mt-auto">
                     <p className="text-sm font-bold text-gray-900">${product.price}</p>
                 </div>

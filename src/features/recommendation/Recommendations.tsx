@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, User } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { getPrimaryImage } from "@/utils/image";
 import type { ICatalogProduct } from "@kingsize/contracts";
@@ -100,9 +100,6 @@ const SignUpNudge = () => (
         style={{ minHeight: "120px" }}
     >
         <div className="flex items-start gap-3 mb-5">
-            <div className="flex-shrink-0 mt-0.5 w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center">
-                <User size={14} className="text-white" />
-            </div>
             <div>
                 <p className="text-sm font-bold text-gray-900 mb-1">Know your size. We&apos;ll handle the rest.</p>
                 <p className="text-sm text-gray-500 leading-relaxed">
@@ -261,22 +258,19 @@ export const Recommendations = () => {
 
     // Construct overlay for blur state matching the instructions exactly
     const LockedOverlay = (
-        <div className="bg-white p-8 rounded-sm shadow-2xl text-center border border-gray-100 flex flex-col items-center justify-center min-h-[200px]">
-            <div className="w-12 h-12 bg-gray-50 flex items-center justify-center rounded-full mb-4">
-                <User size={24} className="text-gray-900" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Get personalised recommendations</h3>
-            <p className="text-sm text-gray-500 mb-6">Takes around 60 seconds to create your account</p>
-            <div className="flex items-center gap-4 justify-center w-full">
+        <div className="bg-white px-8 py-10 rounded-sm shadow-2xl text-center border border-gray-100 flex flex-col items-center justify-center min-h-[180px]">
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2 leading-tight">Get personalised recommendations</h3>
+            <p className="text-[15px] font-medium text-gray-500 mb-8 px-4">Takes around 60 seconds to create your account</p>
+            <div className="flex flex-col sm:flex-row items-center gap-3 justify-center w-full max-w-sm mx-auto">
                 <Link
                     href="/login"
-                    className="h-10 px-6 bg-[#0a0a0a] text-white text-sm font-bold rounded-sm hover:bg-black transition-colors flex items-center justify-center flex-1"
+                    className="h-12 px-8 bg-[#0a0a0a] text-white text-[15px] font-bold rounded-sm border-2 border-[#0a0a0a] hover:bg-black hover:border-black transition-colors flex items-center justify-center w-full"
                 >
                     Create account
                 </Link>
                 <Link
                     href="/login"
-                    className="h-10 px-6 bg-white border border-gray-200 text-gray-900 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors flex items-center justify-center flex-1"
+                    className="h-12 px-8 bg-transparent text-[#0a0a0a] text-[15px] font-bold rounded-sm border-2 border-[#0a0a0a] hover:bg-gray-50 transition-colors flex items-center justify-center w-full"
                 >
                     Log in
                 </Link>
@@ -285,15 +279,12 @@ export const Recommendations = () => {
     );
 
     const EmptyFallback = (
-        <div className="p-8 md:p-12 bg-gray-50 rounded-lg border border-gray-100 text-center" data-testid="recs-empty">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-100">
-                <User className="text-gray-400" size={24} />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">We’re building your recommendations</h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto text-sm leading-relaxed">
+        <div className="p-8 md:p-12 bg-gray-50 rounded-sm border border-gray-100 text-center" data-testid="recs-empty">
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 leading-tight">We’re building your recommendations</h3>
+            <p className="text-gray-500 mb-8 max-w-md mx-auto text-[15px] font-medium leading-relaxed">
                 Like a few items or take our style quiz to get started. The more you interact, the better our suggestions become.
             </p>
-            <Link href="/onboarding" className="inline-flex h-10 px-6 bg-[#0a0a0a] text-white text-sm font-bold rounded items-center justify-center hover:bg-black transition-colors">
+            <Link href="/onboarding" className="inline-flex h-12 px-8 bg-[#0a0a0a] text-white text-[15px] font-bold rounded-sm items-center justify-center hover:bg-black transition-colors">
                 Take Style Quiz
             </Link>
         </div>

@@ -65,7 +65,7 @@ function SwipeCardItem({
 
     return (
         <motion.div
-            className="absolute inset-0 cursor-grab active:cursor-grabbing select-none"
+            className="absolute inset-x-0 inset-y-0 cursor-grab active:cursor-grabbing select-none flex items-center justify-center max-w-sm mx-auto"
             style={{ x, rotate }}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
@@ -74,25 +74,24 @@ function SwipeCardItem({
             initial={{ scale: 1, opacity: 1 }}
             exit={{ x: 0, opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
         >
-            <div className="w-full h-full bg-white rounded-2xl overflow-hidden relative border border-gray-100 shadow-md">
+            <div className="w-full aspect-[3/4] bg-white rounded-2xl overflow-hidden relative border border-gray-100 shadow-md">
                 {/* Product image or placeholder */}
                 {hasRealImage || imgError ? (
                     <Image
                         src={finalSrc}
                         alt={card.label}
                         fill
-                        className={`object-cover ${imgError ? "object-contain p-8" : ""}`}
+                        className={`object-cover object-top ${imgError ? "object-contain p-8 opacity-50" : ""}`}
                         sizes="(max-width: 480px) 100vw, 440px"
                         priority={isTop}
                         loading={isTop ? undefined : "lazy"}
                         onError={handleImageError}
-                        // Added unoptimized if it's the fallback or if we are retrying to bypass next/image cache issues
                         unoptimized={imgError || retryCount > 0}
                     />
                 ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
                         <div className="text-center">
-                            <span className="text-5xl mb-3 block">
+                            <span className="text-5xl mb-3 block opacity-50">
                                 {card.category.includes("Polo") ? "👕" :
                                     card.category.includes("T-Shirt") ? "👚" :
                                         card.category.includes("Short") ? "🩳" :
@@ -120,9 +119,9 @@ function SwipeCardItem({
                 </motion.div>
 
                 {/* Bottom metadata */}
-                <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/70 to-transparent z-10">
-                    <p className="text-white font-bold text-sm">{card.label}</p>
-                    <p className="text-white/70 text-xs">{card.category}</p>
+                <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10">
+                    <p className="text-white font-bold text-base leading-tight drop-shadow-sm">{card.label}</p>
+                    <p className="text-white/80 text-xs mt-1 font-medium drop-shadow-sm">{card.category}</p>
                 </div>
             </div>
         </motion.div>
