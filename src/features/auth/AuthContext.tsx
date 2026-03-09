@@ -128,9 +128,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const createAccount = useCallback(async (email: string) => {
-        const result = await login(email);
-        return { success: result.success, error: result.error };
-    }, [login]);
+        try {
+            const res = await fetch("/api/gateway/customer/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // Reload profile from server to ensure session is active
+                const sessionRes = await fetch("/api/gateway/customer/session");
+                const sessionData = await sessionRes.json();
+
+                if (sessionData.authenticated) {
+                    setState({ isAuthenticated: true, profile: sessionData.profile, preferences: null, loading: false });
+                    return { success: true, needsOnboarding: data.needsOnboarding };
+                }
+                return { success: false, error: "Account created but session synchronization failed.", needsOnboarding: false };
+            }
+            return { success: false, error: data.error || "Failed to create account", needsOnboarding: false };
+        } catch (err) {
+            console.error("[auth] register error", err);
+            return { success: false, error: "An unexpected error occurred during account creation", needsOnboarding: false };
+        }
+    }, []);
 
     const logout = useCallback(async () => {
         await fetch("/api/gateway/customer/session", { method: "DELETE" });

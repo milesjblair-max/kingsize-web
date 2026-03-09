@@ -193,133 +193,161 @@ const DynamicBundleCard = ({ outfit, blur }: { outfit: any, blur?: boolean }) =>
     );
 };
 
+import { HorizontalProductRail } from "@/components/ui/HorizontalProductRail";
+
 // ─── Main export ─────────────────────────────────────────────────────────────
 
-export const Recommendations = () => {
-    const [, setHovered] = useState<string | null>(null);
-    const { isAuthenticated, profile, preferences, loading: authLoading } = useAuth();
+type DataState = "loggedOut" | "loggedInLoading" | "loggedInReady" | "loggedInEmpty" | "error";
 
-    // Dynamic data states
+export const Recommendations = () => {
+    const { isAuthenticated, profile, loading: authLoading } = useAuth();
+    const [dataState, setDataState] = useState<DataState>("loggedInLoading");
     const [recs, setRecs] = useState<ICatalogProduct[]>([]);
-    const [outfits, setOutfits] = useState<any[]>([]);
-    const [loadingData, setLoadingData] = useState(true);
 
     useEffect(() => {
-        if (authLoading) return; // Wait until auth state is known
+        if (authLoading) return;
 
-        // Fetch our real personalised endpoints based on the cookie
-        Promise.all([
-            fetch('/api/gateway/recommendations/home').then(r => r.json()),
-            fetch('/api/gateway/recommendations/outfits').then(r => r.json())
-        ])
-            .then(([homeData, outfitsData]) => {
-                setRecs(homeData.recommendations || []);
-                setOutfits(outfitsData.outfits || []);
-                setLoadingData(false);
+        if (!isAuthenticated) {
+            setDataState("loggedOut");
+            fetch('/api/gateway/recommendations/home')
+                .then(r => r.json())
+                .then(d => setRecs(d.recommendations || []))
+                .catch(() => { });
+            return;
+        }
+
+        setDataState("loggedInLoading");
+
+        const cacheKey = `kingsize_recs_${profile?.email || 'auth'}`;
+        try {
+            const cached = sessionStorage.getItem(cacheKey);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                setRecs(parsed.recs);
+                setDataState(parsed.recs.length === 0 ? "loggedInEmpty" : "loggedInReady");
+                return;
+            }
+        } catch (e) {
+            // Ignore cache read errors
+        }
+
+        fetch('/api/gateway/recommendations/home')
+            .then(r => {
+                if (!r.ok) throw new Error("Recs failed");
+                return r.json();
+            })
+            .then((homeData) => {
+                const r = homeData.recommendations || [];
+                setRecs(r);
+
+                try {
+                    sessionStorage.setItem(cacheKey, JSON.stringify({ recs: r }));
+                } catch (e) {
+                    // Ignore cache write errors
+                }
+
+                if (r.length === 0) {
+                    setDataState("loggedInEmpty");
+                } else {
+                    setDataState("loggedInReady");
+                }
             })
             .catch(err => {
                 console.error("Failed to load recommendations", err);
-                setLoadingData(false);
+                setDataState("error");
             });
 
-    }, [authLoading, isAuthenticated]);
+    }, [authLoading, isAuthenticated, profile?.email]);
 
-    const fitLabel = profile?.fitType === "big" ? "Big" : profile?.fitType === "tall" ? "Tall" : profile?.fitType === "big-tall" ? "Big and Tall" : null;
-
-    return (
-        <section className="px-6 py-12 max-w-[1400px] mx-auto">
-            {/* Module header */}
-            <div className="flex items-end justify-between mb-8">
-                <div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-1">Style we recommend</h2>
-                    <p className="text-sm text-gray-500">Shop by style, built around your fit</p>
-                </div>
+    // Construct overlay for blur state matching the instructions exactly
+    const LockedOverlay = (
+        <div className="bg-white p-8 rounded-sm shadow-2xl text-center border border-gray-100 flex flex-col items-center justify-center min-h-[200px]">
+            <div className="w-12 h-12 bg-gray-50 flex items-center justify-center rounded-full mb-4">
+                <User size={24} className="text-gray-900" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Get personalised recommendations</h3>
+            <p className="text-sm text-gray-500 mb-6">Takes around 60 seconds to create your account</p>
+            <div className="flex items-center gap-4 justify-center w-full">
                 <Link
-                    href="/shop-by-style"
-                    className="text-sm font-bold text-gray-700 hover:text-black transition-colors flex items-center gap-1"
+                    href="/login"
+                    className="h-10 px-6 bg-[#0a0a0a] text-white text-sm font-bold rounded-sm hover:bg-black transition-colors flex items-center justify-center flex-1"
                 >
-                    See more <ArrowRight size={14} />
+                    Create account
+                </Link>
+                <Link
+                    href="/login"
+                    className="h-10 px-6 bg-white border border-gray-200 text-gray-900 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors flex items-center justify-center flex-1"
+                >
+                    Log in
                 </Link>
             </div>
+        </div>
+    );
 
-            {/* Style tiles */}
-            <div
-                className="grid gap-3 mb-8"
-                style={{ gridTemplateColumns: "repeat(5, 1fr)" }}
-                onMouseLeave={() => setHovered(null)}
-            >
-                <style>{`
-                    @media (max-width: 1024px) {
-                        .style-tiles-grid { grid-template-columns: repeat(2, 1fr) !important; }
-                    }
-                    @media (max-width: 640px) {
-                        .style-tiles-grid { grid-template-columns: 1fr !important; }
-                    }
-                `}</style>
-                {STYLE_TILES.map((tile) => (
-                    <StyleTile key={tile.id} tile={tile} />
-                ))}
+    const EmptyFallback = (
+        <div className="p-8 md:p-12 bg-gray-50 rounded-lg border border-gray-100 text-center" data-testid="recs-empty">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-100">
+                <User className="text-gray-400" size={24} />
             </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">We’re building your recommendations</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto text-sm leading-relaxed">
+                Like a few items or take our style quiz to get started. The more you interact, the better our suggestions become.
+            </p>
+            <Link href="/onboarding" className="inline-flex h-10 px-6 bg-[#0a0a0a] text-white text-sm font-bold rounded items-center justify-center hover:bg-black transition-colors">
+                Take Style Quiz
+            </Link>
+        </div>
+    );
 
-            {/* Bottom Section */}
-
-            {/* 1. Recommended For You (Personalised Products) */}
-            <div className="mb-12">
-                <div className="flex items-center gap-3 mb-6">
-                    <p className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-                        {isAuthenticated ? `Recommended for you${fitLabel ? ` — ${fitLabel}` : ""}` : "Recommended for you"}
-                    </p>
-                    {isAuthenticated && preferences?.styleTags && preferences.styleTags.length > 0 && (
-                        <div className="flex gap-1.5 flex-wrap">
-                            {preferences.styleTags.slice(0, 3).map((t) => (
-                                <span key={t} className="text-[10px] bg-gray-900 text-white px-2 py-0.5 rounded-full font-medium capitalize">
-                                    {t}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="relative">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {loadingData || authLoading
-                            ? Array.from({ length: 4 }).map((_, i) => <RecommendedProductCard key={i} />)
-                            : isAuthenticated
-                                ? recs.slice(0, 4).map(p => <RecommendedProductCard key={p.id} product={p} />)
-                                // Logged out teaser
-                                : recs.slice(0, 4).map((p, i) => <RecommendedProductCard key={i} product={p} blur />)
-                        }
-                    </div>
-
-                    {/* Logged-out blur overlay */}
-                    {!isAuthenticated && !loadingData && !authLoading && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center">
-                            <div className="relative z-20 w-full max-w-lg mx-auto">
-                                <SignUpNudge />
-                            </div>
-                        </div>
-                    )}
+    // Skeleton loader for when dataState is loggedInLoading
+    if (dataState === "loggedInLoading") {
+        return (
+            <div className="px-4 md:px-6 py-12 max-w-[1400px] mx-auto animate-pulse" data-testid="recs-loading">
+                <div className="h-8 bg-gray-200 w-64 mb-1 rounded" />
+                <div className="h-4 bg-gray-200 w-32 mb-6 rounded" />
+                <div className="flex gap-4 overflow-hidden">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="flex-none w-[180px] sm:w-[220px] md:w-[240px] lg:w-[260px] h-[340px] bg-gray-100 rounded-sm" />
+                    ))}
                 </div>
             </div>
+        );
+    }
 
-            {/* 2. Complete The Look (Outfits) - Logged in only */}
-            {isAuthenticated && outfits.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-3 mb-6">
-                        <p className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-                            Complete the look
-                        </p>
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Outfits built for your height & build</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {loadingData || authLoading
-                            ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-48 bg-gray-50 rounded-sm animate-pulse" />)
-                            : outfits.map(outfit => <DynamicBundleCard key={outfit.id} outfit={outfit} />)
-                        }
-                    </div>
+    if (dataState === "error") {
+        return (
+            <div className="px-4 md:px-6 py-12 max-w-[1400px] mx-auto" data-testid="recs-error">
+                <div className="p-8 bg-red-50 rounded-lg border border-red-100 text-center">
+                    <p className="text-red-800 font-semibold mb-2">Unable to load your recommendations</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="text-sm font-medium text-red-600 hover:text-red-800 underline underline-offset-2"
+                    >
+                        Try again
+                    </button>
                 </div>
-            )}
-        </section>
+            </div>
+        );
+    }
+
+    // Default return for loggedOut, loggedInReady, loggedInEmpty
+
+    // For loggedOut, we MUST provide enough fake products so the rail renders and doesn't trigger the emptyState fallback internally.
+    const displayProducts = dataState === "loggedOut" && recs.length === 0
+        ? Array.from({ length: 8 }).map((_, i) => ({ id: `dummy-${i}`, title: '', brand: '', price: 0 })) as any[]
+        : recs;
+
+    return (
+        <div className="px-4 md:px-6 max-w-[1400px] mx-auto py-12" data-testid={dataState === "loggedInEmpty" ? "recs-empty" : dataState === "loggedOut" ? "recs-logged-out" : "recs-ready"}>
+            <HorizontalProductRail
+                title="We think you'll like these"
+                subtitle="Recommended for you"
+                products={dataState === "loggedInEmpty" ? [] : displayProducts}
+                blurState={dataState === "loggedOut"}
+                overlayContent={dataState === "loggedOut" ? LockedOverlay : undefined}
+                emptyState={dataState === "loggedInEmpty" ? EmptyFallback : undefined}
+            />
+        </div>
     );
 };
+

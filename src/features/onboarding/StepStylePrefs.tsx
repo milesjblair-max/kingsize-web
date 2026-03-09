@@ -8,18 +8,19 @@ import { NavButtons } from "./OnboardingShell";
 import { STYLE_CATEGORIES } from "./useOnboarding";
 import { getPrimaryImage } from "@/utils/image";
 
-// ─── Swipe Card sub-component ─────────────────────────────────────────────────
-
 function SwipeCardItem({
     card,
     onLike,
     onPass,
+    isTop,
 }: {
     card: SwipeCardData;
     onLike: () => void;
     onPass: () => void;
+    isTop?: boolean;
 }) {
     const [imgError, setImgError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-150, 150], [-20, 20]);
     const likeOpacity = useTransform(x, [20, 80], [0, 1]);
@@ -34,15 +35,33 @@ function SwipeCardItem({
 
     // Keyboard support
     useEffect(() => {
+        if (!isTop) return;
         const handler = (e: KeyboardEvent) => {
             if (e.key === "ArrowRight") onLike();
             if (e.key === "ArrowLeft") onPass();
         };
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [onLike, onPass]);
+    }, [onLike, onPass, isTop]);
 
-    const hasRealImage = card.image && card.image.startsWith("/");
+    const rawUrl = getPrimaryImage(card);
+    // Defensively check if URL is valid or empty
+    const hasRealImage = Boolean(rawUrl && rawUrl.trim() !== "" && rawUrl !== "/images/placeholder.png");
+
+    // Add cache-busting query param on retry
+    const finalSrc = imgError || !hasRealImage
+        ? "/images/placeholder.png"
+        : retryCount > 0
+            ? `${rawUrl}${rawUrl.includes('?') ? '&' : '?'}retry=${retryCount}`
+            : rawUrl;
+
+    const handleImageError = () => {
+        if (retryCount < 1) {
+            setRetryCount(1);
+        } else {
+            setImgError(true);
+        }
+    };
 
     return (
         <motion.div
@@ -57,15 +76,18 @@ function SwipeCardItem({
         >
             <div className="w-full h-full bg-white rounded-2xl overflow-hidden relative border border-gray-100 shadow-md">
                 {/* Product image or placeholder */}
-                {hasRealImage ? (
+                {hasRealImage || imgError ? (
                     <Image
-                        src={imgError ? "/images/placeholder.png" : getPrimaryImage(card)}
+                        src={finalSrc}
                         alt={card.label}
                         fill
-                        className="object-cover"
+                        className={`object-cover ${imgError ? "object-contain p-8" : ""}`}
                         sizes="(max-width: 480px) 100vw, 440px"
-                        priority
-                        onError={() => setImgError(true)}
+                        priority={isTop}
+                        loading={isTop ? undefined : "lazy"}
+                        onError={handleImageError}
+                        // Added unoptimized if it's the fallback or if we are retrying to bypass next/image cache issues
+                        unoptimized={imgError || retryCount > 0}
                     />
                 ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
@@ -341,7 +363,7 @@ export function StepStylePrefs({
                                             }}
                                         >
                                             {i === 1 ? (
-                                                <SwipeCardItem card={card} onLike={handleLike} onPass={handlePass} />
+                                                <SwipeCardItem card={card} onLike={handleLike} onPass={handlePass} isTop={true} />
                                             ) : (
                                                 <div className="w-full h-full bg-gray-100 rounded-2xl border border-gray-200" />
                                             )}
