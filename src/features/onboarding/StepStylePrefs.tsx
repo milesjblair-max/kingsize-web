@@ -381,6 +381,17 @@ export function StepStylePrefs({
                                         </motion.div>
                                     ))}
                                 </AnimatePresence>
+
+                                {/* Preload next 3 images so they are ready before the user swipes to them */}
+                                {remainingCards.slice(1, 4).map((card) => {
+                                    const src = getPrimaryImage(card);
+                                    if (!src || src.startsWith("data:")) return null;
+                                    return (
+                                        <div key={`preload-${card.id}`} style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none", overflow: "hidden" }}>
+                                            <Image src={src} alt="" width={1} height={1} priority unoptimized={false} />
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             {/* Buttons */}

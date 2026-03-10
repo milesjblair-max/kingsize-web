@@ -232,6 +232,8 @@ export const Recommendations = () => {
         if (authLoading) return;
 
         if (!isAuthenticated) {
+            // Clear any stale authenticated recs cache so the next login gets fresh data
+            try { sessionStorage.removeItem("kingsize_recs_session"); } catch (_) { }
             setDataState("loggedOut");
             fetch('/api/gateway/recommendations/home')
                 .then(r => r.json())
