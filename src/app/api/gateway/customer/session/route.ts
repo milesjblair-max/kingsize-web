@@ -41,23 +41,25 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ authenticated: false, profile: null });
         }
 
+        // Map internal profile fields to the shape expected by AuthContext.UserProfile.
+        // Key fix: `onboardingDone` (DB) → `onboardingComplete` (frontend interface).
+        // Also exposes `email` and `createdAt` directly on the profile object.
         return NextResponse.json({
             authenticated: true,
             sessionId: session.id,
-            user: {
-                id: user.id,
+            profile: {
                 email: user.email,
+                createdAt: user.createdAt,
+                fitType: user.profile?.fitType ?? "big-tall",
+                preferredBrands: user.profile?.preferredBrands ?? [],
+                preferredCategories: user.profile?.preferredCategories ?? [],
+                measurements: user.profile?.measurements ?? {},
+                marketingConsent: user.profile?.marketingConsent ?? false,
+                // Align field name with AuthContext.UserProfile interface
+                onboardingComplete: user.profile?.onboardingDone ?? false,
             },
-            profile: user.profile ? {
-                fitType: user.profile.fitType,
-                preferredBrands: user.profile.preferredBrands,
-                preferredCategories: user.profile.preferredCategories,
-                measurements: user.profile.measurements,
-                marketingConsent: user.profile.marketingConsent,
-                onboardingDone: user.profile.onboardingDone,
-            } : null,
         });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("[gateway/session] GET error:", err);
         return NextResponse.json({ error: "Session lookup failed" }, { status: 500 });
     }
@@ -90,17 +92,18 @@ export async function POST(request: NextRequest) {
         });
         res.cookies.set(COOKIE_NAME, session.id, COOKIE_OPTIONS);
         return res;
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("[gateway/session] POST error:", err);
         if (err instanceof z.ZodError) {
             return NextResponse.json({ success: false, error: err.errors }, { status: 400 });
         }
-        return NextResponse.json({ success: false, error: "Login failed", detail: err.message }, { status: 500 });
+        const detail = err instanceof Error ? err.message : String(err);
+        return NextResponse.json({ success: false, error: "Login failed", detail }, { status: 500 });
     }
 }
 
 // DELETE — Logout (expire cookie; session row stays for audit)
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
     const res = NextResponse.json({ success: true });
     res.cookies.set(COOKIE_NAME, "", { ...COOKIE_OPTIONS, maxAge: 0 });
     return res;

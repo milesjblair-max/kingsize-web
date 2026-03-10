@@ -19,6 +19,12 @@ const envSchema = z.object({
     INTEGRATION_PROVIDER: z.enum(["mock", "counterintelligence"]).default("mock"),
     CI_API_URL: z.string().url().optional(),
     CI_API_KEY: z.string().optional(),
+
+    // Toggle mock catalog vs real Counter Intelligence POS data
+    MOCK_CI_ENABLED: z
+        .string()
+        .transform((v) => v === "true" || v === "1")
+        .default("true"),
 });
 
 // Parse and export — will throw at startup if required keys are invalid

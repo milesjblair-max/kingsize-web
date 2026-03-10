@@ -242,7 +242,7 @@ export const Recommendations = () => {
 
         setDataState("loggedInLoading");
 
-        const cacheKey = `kingsize_recs_${profile?.email || 'auth'}`;
+        const cacheKey = "kingsize_recs_session";
         try {
             const cached = sessionStorage.getItem(cacheKey);
             if (cached) {
@@ -280,7 +280,7 @@ export const Recommendations = () => {
                 console.error("Failed to load recommendations", err);
                 // Graceful degradation: show the blurred teaser even on API failure
                 // to entice users to log in or try again later without a red error box.
-                setDataState("loggedOut");
+                setDataState("error");
             });
 
     }, [authLoading, isAuthenticated, profile?.email]);

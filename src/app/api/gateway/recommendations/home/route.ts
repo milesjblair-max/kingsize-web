@@ -26,18 +26,17 @@ export async function GET(request: NextRequest) {
         }
 
         // Authenticated user -> Personalised
-        // Fetch profile info via session
+        // Fetch profile info via session (using production schema: users + profiles)
         let row;
         try {
             row = await dbQueryOne<{
-                customer_id: string | null;
+                user_id: string | null;
                 fit_type: string | null;
-                dimensions: string | null;
-                style_preferences: string | null;
+                preferred_categories: string[] | null;
             }>(
-                `SELECT s.customer_id, c.fit_type, c.dimensions, c.style_preferences
+                `SELECT s.user_id, p.fit_type, p.preferred_categories
                  FROM sessions s
-                 LEFT JOIN customers c ON c.id = s.customer_id
+                 LEFT JOIN profiles p ON p.user_id = s.user_id
                  WHERE s.id = $1 LIMIT 1`,
                 [sessionId]
             );
@@ -48,19 +47,7 @@ export async function GET(request: NextRequest) {
         }
 
         const fitType = row?.fit_type ?? "big-tall";
-        let preferredCategories: string[] = [];
-
-        // Parse style preferences if available
-        try {
-            if (row?.style_preferences) {
-                const prefs = JSON.parse(row.style_preferences);
-                if (prefs.liked && Array.isArray(prefs.liked)) {
-                    // simple mapping from liked cards to categories
-                    const categories = prefs.liked.map((l: any) => l.category);
-                    preferredCategories = [...new Set<string>(categories)];
-                }
-            }
-        } catch { /* ignore parse errors */ }
+        const preferredCategories: string[] = row?.preferred_categories ?? [];
 
         // Use fit type as primary filter
         let products: ICatalogProduct[] = [];
@@ -70,7 +57,7 @@ export async function GET(request: NextRequest) {
             console.error("[recs/home] Catalog fetch failed", catalogErr);
         }
 
-        // If we have preferred categories, boost them
+        // If we have preferred categories, boost them to the front
         if (preferredCategories.length > 0 && products.length > 0) {
             products = products.sort((a: ICatalogProduct, b: ICatalogProduct) => {
                 const aMatch = a.categoryPaths.some(p => preferredCategories.some(pc => p.includes(pc)));
