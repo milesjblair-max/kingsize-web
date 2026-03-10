@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build context from DB
-    let ctx: CustomerContext = {
+    const ctx: CustomerContext = {
         sessionId,
         fitType: "big-tall",
         consentState: "essential",

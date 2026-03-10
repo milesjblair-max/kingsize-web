@@ -71,8 +71,10 @@ class PostgresCatalogRepository implements ICatalogProvider {
             conditions.push(`p.brand ILIKE $${i++}`);
         }
         if (filters.fit) {
+            // 'big-tall' and 'all' products fit everyone; also match the user's specific fit type.
+            // e.g. a user with fit_type='big' sees products tagged 'big', 'big-tall', and 'all'.
             params.push(filters.fit);
-            conditions.push(`p.fit_type = $${i++}`);
+            conditions.push(`(p.fit_type = $${i++} OR p.fit_type = 'big-tall' OR p.fit_type = 'all')`);
         }
         if (filters.q) {
             params.push(`%${filters.q}%`);
