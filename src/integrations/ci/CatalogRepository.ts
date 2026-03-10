@@ -17,6 +17,29 @@ import type {
     ISwipeCandidate,
 } from "@kingsize/contracts";
 
+// ─── URL normalizer ───────────────────────────────────────────────────────────
+//
+// The ingest script slugifies category directory names with dashes (e.g. POLO_S → polo-s),
+// but the images were manually organised into shorter directory names (polos, jackets, etc.).
+// This maps the DB-stored path to the actual path served by Next.js static files.
+//
+const URL_PATH_MAP: Record<string, string> = {
+    "/products/polo-s/": "/products/polos/",
+    "/products/accessories-belts/": "/products/accessories/",
+    "/products/jacket-fleecy-sweat-tops/": "/products/jackets/",
+    "/products/sport-jackets-suit-coats/": "/products/sport-jackets/",
+    "/products/tall-items-mix/": "/products/tall-mix/",
+    "/products/trousers-jeans-trackpants/": "/products/trousers/",
+};
+
+function normalizeImageUrl(url: string): string {
+    if (!url || !url.startsWith("/products/")) return url;
+    for (const [wrong, correct] of Object.entries(URL_PATH_MAP)) {
+        if (url.startsWith(wrong)) return correct + url.slice(wrong.length);
+    }
+    return url;
+}
+
 // ─── Row mappers ──────────────────────────────────────────────────────────────
 
 function mapProduct(row: any, images: ICatalogImage[], variants: ICatalogVariant[]): ICatalogProduct {
@@ -177,7 +200,7 @@ class PostgresCatalogRepository implements ICatalogProvider {
             slug: r.slug,
             brand: r.brand,
             title: r.title,
-            primaryImageUrl: r.url ?? "/images/placeholder-product.jpg",
+            primaryImageUrl: normalizeImageUrl(r.url ?? "/images/placeholder-product.jpg"),
             colour: r.colour ?? "",
             category: r.category_path ?? "",
             tags: [r.colour ?? "", r.category_path ?? ""].filter(Boolean),
@@ -199,7 +222,7 @@ class PostgresCatalogRepository implements ICatalogProvider {
         ]);
 
         const images: ICatalogImage[] = imgRows.map((img) => ({
-            url: img.url,
+            url: normalizeImageUrl(img.url),
             alt: img.alt ?? row.title,
             position: img.position,
             colourCode: img.colour_code ?? undefined,
