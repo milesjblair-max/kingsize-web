@@ -143,7 +143,7 @@ const SignUpNudge = () => (
 const RecommendedProductCard = ({ product, blur }: { product?: ICatalogProduct, blur?: boolean }) => {
     const [imgError, setImgError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
-    const [finalSrc, setFinalSrc] = useState(() => getPrimaryImage(product));
+    const [finalSrc, setFinalSrc] = useState(() => product ? getPrimaryImage(product) : null);
 
     const handleImageError = () => {
         if (retryCount === 0) {
@@ -166,7 +166,7 @@ const RecommendedProductCard = ({ product, blur }: { product?: ICatalogProduct, 
         <Link href={`/products/${product.slug}`} className={`group flex flex-col ${blur ? 'blur-[4px] pointer-events-none select-none' : ''}`}>
             <div className="relative aspect-[3/4] bg-gray-100 mb-3 overflow-hidden rounded-sm">
                 <Image
-                    src={imgError ? getPrimaryImage({}) : finalSrc}
+                    src={imgError ? getPrimaryImage({}) : (finalSrc ?? getPrimaryImage({}))}
                     alt={product.title}
                     fill
                     className={`object-cover object-top transition-transform duration-500 group-hover:scale-105 ${imgError ? "opacity-30 p-8 object-contain" : ""}`}

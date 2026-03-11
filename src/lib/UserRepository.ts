@@ -149,8 +149,8 @@ class PostgresUserRepository implements IUserRepository {
 
     private mapProfile(row: UserProfileRow): IProfile {
         return {
-            userId: row.user_id,
-            fitType: row.fit_type,
+            userId: row.user_id as string,
+            fitType: row.fit_type as IProfile["fitType"],
             preferredBrands: row.preferred_brands ?? [],
             preferredCategories: row.preferred_categories ?? [],
             measurements: typeof row.measurements === "string"

@@ -94,7 +94,7 @@ function mapProduct(row: ProductRow, images: ICatalogImage[], variants: ICatalog
         title: row.title,
         slug: row.slug,
         descriptionHtml: row.description_html ?? "",
-        fitType: row.fit_type ?? "big-tall",
+        fitType: (row.fit_type ?? "big-tall") as ICatalogProduct["fitType"],
         isLive: row.is_live ?? true,
         categoryPaths: row.category_paths ?? [],
         filters: row.filters ?? {},
@@ -275,9 +275,9 @@ class PostgresCatalogRepository implements ICatalogProvider {
             colour: v.colour ?? "",
             colourCode: v.colour_code ?? "",
             sizeLabel: v.size_label,
-            sizeType: v.size_type ?? "X",
-            price: parseFloat(v.price ?? "0"),
-            compareAtPrice: v.compare_at_price ? parseFloat(v.compare_at_price) : undefined,
+            sizeType: (v.size_type ?? "X") as ICatalogVariant["sizeType"],
+            price: parseFloat(String(v.price ?? "0")),
+            compareAtPrice: v.compare_at_price ? parseFloat(String(v.compare_at_price)) : undefined,
             stockTotal: v.stock_total ?? 0,
         }));
 
