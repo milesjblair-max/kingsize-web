@@ -215,8 +215,8 @@ function copyImagesToPublic(manifest: ImageManifestEntry[]): void {
         try {
             fs.copyFileSync(entry.localPath, destPath);
             copied++;
-        } catch (e: any) {
-            console.warn(`  [WARN] Copy failed for ${entry.filename}: ${e.message}`);
+        } catch (e: unknown) {
+            console.warn(`  [WARN] Copy failed for ${entry.filename}: ${e instanceof Error ? e.message : String(e)}`);
         }
     }
 
@@ -381,8 +381,8 @@ async function uploadToR2(manifest: ImageManifestEntry[]): Promise<ImageManifest
             entry.r2Key = key;
             entry.url = publicUrl;
             uploaded++;
-        } catch (e: any) {
-            console.warn(`  [WARN] Upload failed for ${entry.filename}: ${e.message}`);
+        } catch (e: unknown) {
+            console.warn(`  [WARN] Upload failed for ${entry.filename}: ${e instanceof Error ? e.message : String(e)}`);
             failed++;
         }
     }

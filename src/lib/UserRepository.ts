@@ -42,11 +42,28 @@ export interface IUserRepository {
     delete(userId: string): Promise<void>;
 }
 
+// ─── DB row type ──────────────────────────────────────────────────────────────
+
+interface UserProfileRow {
+    id: string;
+    email: string;
+    created_at: Date;
+    user_id?: string;
+    fit_type?: string;
+    preferred_brands?: string[];
+    preferred_categories?: string[];
+    measurements?: string | Record<string, string | number>;
+    marketing_consent?: boolean;
+    onboarding_done?: boolean;
+    updated_at?: Date;
+    profile_updated_at?: Date;
+}
+
 // ─── Postgres implementation ──────────────────────────────────────────────────
 
 class PostgresUserRepository implements IUserRepository {
     async findByEmail(email: string): Promise<IUserWithProfile | null> {
-        const row = await dbQueryOne<any>(
+        const row = await dbQueryOne<UserProfileRow>(
             `SELECT u.id, u.email, u.created_at,
                     p.fit_type, p.preferred_brands, p.preferred_categories,
                     p.measurements, p.marketing_consent, p.onboarding_done, p.updated_at AS profile_updated_at
@@ -60,7 +77,7 @@ class PostgresUserRepository implements IUserRepository {
     }
 
     async findById(id: string): Promise<IUserWithProfile | null> {
-        const row = await dbQueryOne<any>(
+        const row = await dbQueryOne<UserProfileRow>(
             `SELECT u.id, u.email, u.created_at,
                     p.fit_type, p.preferred_brands, p.preferred_categories,
                     p.measurements, p.marketing_consent, p.onboarding_done, p.updated_at AS profile_updated_at
@@ -86,7 +103,7 @@ class PostgresUserRepository implements IUserRepository {
     }
 
     async upsertProfile(userId: string, data: Partial<IProfile>): Promise<IProfile> {
-        const row = await dbQueryOne<any>(
+        const row = await dbQueryOne<UserProfileRow>(
             `INSERT INTO profiles (
                 user_id, fit_type, preferred_brands, preferred_categories,
                 measurements, marketing_consent, onboarding_done, updated_at
@@ -119,7 +136,7 @@ class PostgresUserRepository implements IUserRepository {
         await dbQuery("DELETE FROM users WHERE id = $1", [userId]);
     }
 
-    private mapRow(row: any): IUserWithProfile {
+    private mapRow(row: UserProfileRow): IUserWithProfile {
         return {
             id: row.id,
             email: row.email,
@@ -130,7 +147,7 @@ class PostgresUserRepository implements IUserRepository {
         };
     }
 
-    private mapProfile(row: any): IProfile {
+    private mapProfile(row: UserProfileRow): IProfile {
         return {
             userId: row.user_id,
             fitType: row.fit_type,

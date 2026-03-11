@@ -181,7 +181,20 @@ const RecommendedProductCard = ({ product, blur }: { product?: ICatalogProduct, 
     );
 }
 
-const DynamicBundleCard = ({ outfit, blur }: { outfit: any, blur?: boolean }) => {
+interface BundleProduct {
+    title: string;
+    imageUrl?: string;
+    primaryImageUrl?: string;
+    images?: { isPrimary?: boolean; url: string; position?: number }[];
+    image?: string;
+}
+
+interface BundleOutfit {
+    name: string;
+    products: BundleProduct[];
+}
+
+const DynamicBundleCard = ({ outfit, blur }: { outfit: BundleOutfit, blur?: boolean }) => {
     const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
     const handleImgError = (idx: number) => {
@@ -191,7 +204,7 @@ const DynamicBundleCard = ({ outfit, blur }: { outfit: any, blur?: boolean }) =>
     return (
         <div className={`group block border border-gray-100 rounded-sm overflow-hidden bg-white ${blur ? 'blur-[4px] pointer-events-none select-none' : ''}`}>
             <div className="flex xl:h-48 lg:h-40 h-32">
-                {outfit.products.map((p: any, i: number) => (
+                {outfit.products.map((p: BundleProduct, i: number) => (
                     <div key={i} className="relative flex-1">
                         <Image
                             src={imgErrors[i] ? getPrimaryImage({}) : getPrimaryImage(p)}
@@ -234,6 +247,7 @@ export const Recommendations = () => {
         if (!isAuthenticated) {
             // Clear any stale authenticated recs cache so the next login gets fresh data
             try { sessionStorage.removeItem("kingsize_recs_session"); } catch (_) { }
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setDataState("loggedOut");
             fetch('/api/gateway/recommendations/home')
                 .then(r => r.json())
@@ -242,6 +256,7 @@ export const Recommendations = () => {
             return;
         }
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDataState("loggedInLoading");
 
         const cacheKey = "kingsize_recs_session";
@@ -355,8 +370,8 @@ export const Recommendations = () => {
     // Default return for loggedOut, loggedInReady, loggedInEmpty
 
     // For loggedOut, we MUST provide enough fake products so the rail renders and doesn't trigger the emptyState fallback internally.
-    const displayProducts = dataState === "loggedOut" && recs.length === 0
-        ? Array.from({ length: 8 }).map((_, i) => ({ id: `dummy-${i}`, title: '', brand: '', price: 0 })) as any[]
+    const displayProducts: ICatalogProduct[] = dataState === "loggedOut" && recs.length === 0
+        ? Array.from({ length: 8 }).map((_, i) => ({ id: `dummy-${i}`, title: '', brand: '', price: 0 } as ICatalogProduct))
         : recs;
 
     return (

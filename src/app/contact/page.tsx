@@ -232,7 +232,7 @@ export default function ContactPage() {
                     <div className="text-center py-12 text-gray-500">
                         <p>{isLoadingLocation ? "Locating postcode..." : "No stores found matching your search."}</p>
                         {isPostcode && !isLoadingLocation && (
-                            <p className="text-xs mt-2 text-red-400">We couldn't verify that postcode. Please try another.</p>
+                            <p className="text-xs mt-2 text-red-400">We couldn&apos;t verify that postcode. Please try another.</p>
                         )}
                     </div>
                 )}

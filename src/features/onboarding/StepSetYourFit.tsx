@@ -193,7 +193,7 @@ export function StepSetYourFit({
                             <div>
                                 <p className="font-black text-[#0a0a0a] text-base mb-1">Enter my usual sizes</p>
                                 <p className="text-sm text-gray-500 leading-relaxed">
-                                    Tell us your label sizes (XL, 2XL etc.) and we'll work out your measurements.
+                                    Tell us your label sizes (XL, 2XL etc.) and we&apos;ll work out your measurements.
                                 </p>
                             </div>
                         </div>
@@ -292,7 +292,7 @@ export function StepSetYourFit({
                     className="flex flex-col flex-1"
                 >
                     <p className="text-sm text-gray-600 mb-5">
-                        Enter any sizes you know — we'll fill in the rest.
+                        Enter any sizes you know — we&apos;ll fill in the rest.
                     </p>
                     <div className="flex flex-col gap-4 flex-1">
                         <SelectDropdown

@@ -17,6 +17,46 @@ import type {
     ISwipeCandidate,
 } from "@kingsize/contracts";
 
+// ─── DB row types ─────────────────────────────────────────────────────────────
+
+interface ProductRow {
+    id: string;
+    brand: string;
+    title: string;
+    slug: string;
+    description_html: string;
+    fit_type: string;
+    is_live: boolean;
+    category_paths: string[];
+    filters: Record<string, string[]>;
+    size_guide_rows?: string | unknown[];
+    guide_type?: string;
+    size_guide_notes?: string;
+}
+
+interface ImageRow {
+    product_id: string;
+    url: string;
+    alt?: string;
+    position: number;
+    colour_code?: string;
+    is_primary?: boolean;
+}
+
+interface VariantRow {
+    id: string | number;
+    product_id: string;
+    sku: string;
+    colour?: string;
+    colour_code?: string;
+    size_label: string;
+    size_type?: string;
+    price?: string | number;
+    compare_at_price?: string | number;
+    stock_total?: number;
+    is_available?: boolean;
+}
+
 // ─── URL normalizer ───────────────────────────────────────────────────────────
 //
 // The ingest script slugifies category directory names with dashes (e.g. POLO_S → polo-s),
@@ -42,7 +82,7 @@ function normalizeImageUrl(url: string): string {
 
 // ─── Row mappers ──────────────────────────────────────────────────────────────
 
-function mapProduct(row: any, images: ICatalogImage[], variants: ICatalogVariant[]): ICatalogProduct {
+function mapProduct(row: ProductRow, images: ICatalogImage[], variants: ICatalogVariant[]): ICatalogProduct {
     const primary = images.find((i) => i.isPrimary) ?? images[0];
     const price = variants.length > 0 ? Math.min(...variants.map((v) => v.price)) : 0;
     const colours = [...new Set(variants.map((v) => v.colour).filter(Boolean))];
@@ -107,7 +147,7 @@ class PostgresCatalogRepository implements ICatalogProvider {
         const limit = Math.min(filters.limit ?? 48, 100);
         const offset = filters.offset ?? 0;
 
-        const rows = await dbQuery<any>(
+        const rows = await dbQuery<ProductRow>(
             `SELECT p.*,
         ARRAY(SELECT pc.category_path FROM product_categories pc WHERE pc.product_id = p.id ORDER BY pc.position) AS category_paths,
         sg.rows AS size_guide_rows, sg.guide_type, sg.notes AS size_guide_notes
@@ -123,7 +163,7 @@ class PostgresCatalogRepository implements ICatalogProvider {
     }
 
     async getProductBySlug(slug: string): Promise<ICatalogProduct | null> {
-        const row = await dbQueryOne<any>(
+        const row = await dbQueryOne<ProductRow>(
             `SELECT p.*,
         ARRAY(SELECT pc.category_path FROM product_categories pc WHERE pc.product_id = p.id ORDER BY pc.position) AS category_paths,
         sg.rows AS size_guide_rows, sg.guide_type, sg.notes AS size_guide_notes
@@ -209,13 +249,13 @@ class PostgresCatalogRepository implements ICatalogProvider {
 
     // ─── Private hydration ─────────────────────────────────────────────────────
 
-    private async _hydrate(row: any): Promise<ICatalogProduct> {
+    private async _hydrate(row: ProductRow): Promise<ICatalogProduct> {
         const [imgRows, varRows] = await Promise.all([
-            dbQuery<any>(
+            dbQuery<ImageRow>(
                 `SELECT * FROM product_images WHERE product_id = $1 ORDER BY position ASC`,
                 [row.id]
             ),
-            dbQuery<any>(
+            dbQuery<VariantRow>(
                 `SELECT * FROM product_variants WHERE product_id = $1 ORDER BY id ASC`,
                 [row.id]
             ),
