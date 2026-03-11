@@ -49,11 +49,11 @@ export async function POST(request: NextRequest) {
         });
         res.cookies.set(COOKIE_NAME, session.id, COOKIE_OPTIONS);
         return res;
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("[gateway/register] POST error:", err);
         if (err instanceof z.ZodError) {
             return NextResponse.json({ success: false, error: err.errors }, { status: 400 });
         }
-        return NextResponse.json({ success: false, error: "Failed to create account. Please check your connection and try again.", detail: err.message }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Failed to create account. Please check your connection and try again.", detail: err instanceof Error ? err.message : String(err) }, { status: 500 });
     }
 }

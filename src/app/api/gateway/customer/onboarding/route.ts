@@ -35,11 +35,11 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json({ success: true, profile: { onboardingDone: profile.onboardingDone } });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("[gateway/onboarding] POST error:", err);
         if (err instanceof z.ZodError) {
             return NextResponse.json({ success: false, error: err.errors }, { status: 400 });
         }
-        return NextResponse.json({ success: false, error: "Onboarding save failed", detail: err.message }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Onboarding save failed", detail: err instanceof Error ? err.message : String(err) }, { status: 500 });
     }
 }

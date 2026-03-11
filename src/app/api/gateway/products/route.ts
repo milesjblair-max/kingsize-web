@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
                 "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
             },
         });
-    } catch (err: any) {
-        console.error("[gateway/products] GET error:", err.message);
+    } catch (err: unknown) {
+        console.error("[gateway/products] GET error:", err instanceof Error ? err.message : err);
         return NextResponse.json({ products: [], count: 0, error: "Catalog unavailable" }, { status: 503 });
     }
 }

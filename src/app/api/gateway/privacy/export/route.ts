@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
 
     const [user, swipes, vector] = await Promise.all([
         userRepository.findById(session.userId),
-        dbQuery<any>("SELECT product_id, action, created_at FROM swipe_events WHERE user_id = $1 ORDER BY created_at DESC", [session.userId]),
-        dbQuery<any>("SELECT vector_embedding, updated_at FROM preference_vectors WHERE user_id = $1", [session.userId]),
+        dbQuery<{ product_id: string; action: string; created_at: Date }>("SELECT product_id, action, created_at FROM swipe_events WHERE user_id = $1 ORDER BY created_at DESC", [session.userId]),
+        dbQuery<{ vector_embedding: number[] | null; updated_at: Date }>("SELECT vector_embedding, updated_at FROM preference_vectors WHERE user_id = $1", [session.userId]),
     ]);
 
     const exportData = {
