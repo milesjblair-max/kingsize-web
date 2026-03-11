@@ -5,7 +5,13 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
     const sessionId = request.cookies.get("ks_session_id")?.value;
-    const authDiagnostic: any = {
+    const authDiagnostic: {
+        hasSessionCookie: boolean;
+        sessionId: string | null;
+        sessionValid: boolean;
+        userId: string | null;
+        error: string | null;
+    } = {
         hasSessionCookie: !!sessionId,
         sessionId: sessionId || null,
         sessionValid: false,
@@ -20,8 +26,8 @@ export async function GET(request: NextRequest) {
                 authDiagnostic.sessionValid = true;
                 authDiagnostic.userId = session.userId || null;
             }
-        } catch (e: any) {
-            authDiagnostic.error = e.message || e.toString();
+        } catch (e: unknown) {
+            authDiagnostic.error = e instanceof Error ? e.message : String(e);
         }
     }
 

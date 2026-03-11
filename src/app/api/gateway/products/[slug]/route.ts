@@ -19,8 +19,8 @@ export async function GET(
                 "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
             },
         });
-    } catch (err: any) {
-        console.error("[gateway/products/slug] GET error:", err.message);
+    } catch (err: unknown) {
+        console.error("[gateway/products/slug] GET error:", err instanceof Error ? err.message : err);
         return NextResponse.json({ error: "Product unavailable" }, { status: 503 });
     }
 }

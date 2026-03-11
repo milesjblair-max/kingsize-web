@@ -141,7 +141,7 @@ export class PersonalizationService {
 
         if (opts.customerId) {
             // ── Logged-in: use preference_vectors for stored affinity ─────────
-            const prefRow = await dbQueryOne<{ vector_embedding: any }>(
+            const prefRow = await dbQueryOne<{ vector_embedding: string | Record<string, unknown> }>(
                 `SELECT vector_embedding FROM preference_vectors WHERE user_id = $1 LIMIT 1`,
                 [opts.customerId]
             );

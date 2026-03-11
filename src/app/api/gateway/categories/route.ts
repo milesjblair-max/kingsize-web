@@ -9,8 +9,8 @@ export async function GET() {
         return NextResponse.json({ categories }, {
             headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=900" },
         });
-    } catch (err: any) {
-        console.error("[gateway/categories] GET error:", err.message);
+    } catch (err: unknown) {
+        console.error("[gateway/categories] GET error:", err instanceof Error ? err.message : err);
         return NextResponse.json({ categories: [] }, { status: 503 });
     }
 }

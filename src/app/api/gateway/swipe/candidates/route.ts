@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
             // Never cache personalised endpoints
             headers: { "Cache-Control": "private, no-store" },
         });
-    } catch (err: any) {
-        console.error("[gateway/swipe/candidates] GET error:", err.message);
+    } catch (err: unknown) {
+        console.error("[gateway/swipe/candidates] GET error:", err instanceof Error ? err.message : err);
         // Graceful degradation — return empty, onboarding falls back to static cards
         return NextResponse.json({ candidates: [], count: 0 }, { status: 200 });
     }

@@ -60,7 +60,7 @@ export function StepFitType({
                     How do you typically shop?
                 </h2>
                 <p className="text-sm text-gray-500">
-                    We'll filter every product to your fit from here on.
+                    We&apos;ll filter every product to your fit from here on.
                 </p>
             </div>
 

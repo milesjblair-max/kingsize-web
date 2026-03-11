@@ -38,7 +38,7 @@ export function StepWelcome({ onNext }: { onNext: () => void }) {
                         transition={{ delay: 0.15, duration: 0.4 }}
                         className="text-3xl font-black text-[#0a0a0a] leading-tight mb-3"
                     >
-                        Let's set up your perfect fit
+                        Let&apos;s set up your perfect fit
                     </motion.h1>
 
                     <motion.p
@@ -47,7 +47,7 @@ export function StepWelcome({ onNext }: { onNext: () => void }) {
                         transition={{ delay: 0.25, duration: 0.4 }}
                         className="text-gray-500 text-base leading-relaxed"
                     >
-                        We'll personalise every product recommendation to your exact measurements and style — takes just 2 minutes.
+                        We&apos;ll personalise every product recommendation to your exact measurements and style — takes just 2 minutes.
                     </motion.p>
                 </div>
 

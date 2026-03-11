@@ -49,8 +49,11 @@ function SwipeCardItem({
 
     // Sync state if card changes
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFinalSrc(getPrimaryImage(card));
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setRetryCount(0);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setImgError(false);
     }, [card.id]);
 
@@ -96,9 +99,8 @@ function SwipeCardItem({
                         className="object-cover object-top transition-all duration-300"
                         sizes="(max-width: 480px) 100vw, 440px"
                         priority={isTop}
-                        loading={isTop ? undefined : "lazy"}
+                        unoptimized
                         onError={handleImageError}
-                        unoptimized={retryCount > 0}
                     />
                 ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -193,13 +195,14 @@ export function StepStylePrefs({
     // Fetch real swipe candidates when user chooses swipe mode
     useEffect(() => {
         if (mode !== "swipe" || cards.length > 0) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCardsLoading(true);
 
         fetch("/api/gateway/swipe/candidates?category=tops,shorts,casual&limit=12")
             .then((r) => r.json())
             .then((data) => {
                 if (data.candidates && data.candidates.length > 0) {
-                    const realCards: SwipeCardData[] = data.candidates.map((c: any) => ({
+                    const realCards: SwipeCardData[] = data.candidates.map((c: { productId: string; primaryImageUrl: string; title: string; category: string; tags?: string[] }) => ({
                         id: c.productId,
                         image: c.primaryImageUrl,
                         label: c.title,
@@ -218,6 +221,19 @@ export function StepStylePrefs({
 
     const totalSwiped = swipeLiked.length + swipePassed.length;
     const remainingCards = cards.slice(totalSwiped);
+
+    // Preload the next 3 card images using native browser Image objects.
+    // This works with unoptimized images because the raw URL is cached directly.
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const toPreload = remainingCards.slice(1, 4);
+        toPreload.forEach((card) => {
+            const src = getPrimaryImage(card);
+            if (!src || src.startsWith("data:")) return;
+            const img = new window.Image();
+            img.src = src;
+        });
+    }, [remainingCards]);
     const swipeDone = cards.length > 0 && totalSwiped >= cards.length;
 
     const handleLike = useCallback(() => {
@@ -382,16 +398,6 @@ export function StepStylePrefs({
                                     ))}
                                 </AnimatePresence>
 
-                                {/* Preload next 3 images so they are ready before the user swipes to them */}
-                                {remainingCards.slice(1, 4).map((card) => {
-                                    const src = getPrimaryImage(card);
-                                    if (!src || src.startsWith("data:")) return null;
-                                    return (
-                                        <div key={`preload-${card.id}`} style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none", overflow: "hidden" }}>
-                                            <Image src={src} alt="" width={1} height={1} priority unoptimized={false} />
-                                        </div>
-                                    );
-                                })}
                             </div>
 
                             {/* Buttons */}

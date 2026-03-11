@@ -29,11 +29,11 @@ export async function GET() {
             schema_version: versionRow?.version ?? null,
             db_time: timeRow?.now?.toISOString() ?? null,
         });
-    } catch (err: any) {
+    } catch (err: unknown) {
         return NextResponse.json({
             status: "error",
             env,
-            message: err.message,
+            message: err instanceof Error ? err.message : String(err),
         }, { status: 503 });
     }
 }

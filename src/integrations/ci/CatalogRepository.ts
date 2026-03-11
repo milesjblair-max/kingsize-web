@@ -17,9 +17,72 @@ import type {
     ISwipeCandidate,
 } from "@kingsize/contracts";
 
+// ─── DB row types ─────────────────────────────────────────────────────────────
+
+interface ProductRow {
+    id: string;
+    brand: string;
+    title: string;
+    slug: string;
+    description_html: string;
+    fit_type: string;
+    is_live: boolean;
+    category_paths: string[];
+    filters: Record<string, string[]>;
+    size_guide_rows?: string | unknown[];
+    guide_type?: string;
+    size_guide_notes?: string;
+}
+
+interface ImageRow {
+    product_id: string;
+    url: string;
+    alt?: string;
+    position: number;
+    colour_code?: string;
+    is_primary?: boolean;
+}
+
+interface VariantRow {
+    id: string | number;
+    product_id: string;
+    sku: string;
+    colour?: string;
+    colour_code?: string;
+    size_label: string;
+    size_type?: string;
+    price?: string | number;
+    compare_at_price?: string | number;
+    stock_total?: number;
+    is_available?: boolean;
+}
+
+// ─── URL normalizer ───────────────────────────────────────────────────────────
+//
+// The ingest script slugifies category directory names with dashes (e.g. POLO_S → polo-s),
+// but the images were manually organised into shorter directory names (polos, jackets, etc.).
+// This maps the DB-stored path to the actual path served by Next.js static files.
+//
+const URL_PATH_MAP: Record<string, string> = {
+    "/products/polo-s/": "/products/polos/",
+    "/products/accessories-belts/": "/products/accessories/",
+    "/products/jacket-fleecy-sweat-tops/": "/products/jackets/",
+    "/products/sport-jackets-suit-coats/": "/products/sport-jackets/",
+    "/products/tall-items-mix/": "/products/tall-mix/",
+    "/products/trousers-jeans-trackpants/": "/products/trousers/",
+};
+
+function normalizeImageUrl(url: string): string {
+    if (!url || !url.startsWith("/products/")) return url;
+    for (const [wrong, correct] of Object.entries(URL_PATH_MAP)) {
+        if (url.startsWith(wrong)) return correct + url.slice(wrong.length);
+    }
+    return url;
+}
+
 // ─── Row mappers ──────────────────────────────────────────────────────────────
 
-function mapProduct(row: any, images: ICatalogImage[], variants: ICatalogVariant[]): ICatalogProduct {
+function mapProduct(row: ProductRow, images: ICatalogImage[], variants: ICatalogVariant[]): ICatalogProduct {
     const primary = images.find((i) => i.isPrimary) ?? images[0];
     const price = variants.length > 0 ? Math.min(...variants.map((v) => v.price)) : 0;
     const colours = [...new Set(variants.map((v) => v.colour).filter(Boolean))];
@@ -31,7 +94,7 @@ function mapProduct(row: any, images: ICatalogImage[], variants: ICatalogVariant
         title: row.title,
         slug: row.slug,
         descriptionHtml: row.description_html ?? "",
-        fitType: row.fit_type ?? "big-tall",
+        fitType: (row.fit_type ?? "big-tall") as ICatalogProduct["fitType"],
         isLive: row.is_live ?? true,
         categoryPaths: row.category_paths ?? [],
         filters: row.filters ?? {},
@@ -84,7 +147,7 @@ class PostgresCatalogRepository implements ICatalogProvider {
         const limit = Math.min(filters.limit ?? 48, 100);
         const offset = filters.offset ?? 0;
 
-        const rows = await dbQuery<any>(
+        const rows = await dbQuery<ProductRow>(
             `SELECT p.*,
         ARRAY(SELECT pc.category_path FROM product_categories pc WHERE pc.product_id = p.id ORDER BY pc.position) AS category_paths,
         sg.rows AS size_guide_rows, sg.guide_type, sg.notes AS size_guide_notes
@@ -100,7 +163,7 @@ class PostgresCatalogRepository implements ICatalogProvider {
     }
 
     async getProductBySlug(slug: string): Promise<ICatalogProduct | null> {
-        const row = await dbQueryOne<any>(
+        const row = await dbQueryOne<ProductRow>(
             `SELECT p.*,
         ARRAY(SELECT pc.category_path FROM product_categories pc WHERE pc.product_id = p.id ORDER BY pc.position) AS category_paths,
         sg.rows AS size_guide_rows, sg.guide_type, sg.notes AS size_guide_notes
@@ -177,7 +240,7 @@ class PostgresCatalogRepository implements ICatalogProvider {
             slug: r.slug,
             brand: r.brand,
             title: r.title,
-            primaryImageUrl: r.url ?? "/images/placeholder-product.jpg",
+            primaryImageUrl: normalizeImageUrl(r.url ?? "/images/placeholder-product.jpg"),
             colour: r.colour ?? "",
             category: r.category_path ?? "",
             tags: [r.colour ?? "", r.category_path ?? ""].filter(Boolean),
@@ -186,20 +249,20 @@ class PostgresCatalogRepository implements ICatalogProvider {
 
     // ─── Private hydration ─────────────────────────────────────────────────────
 
-    private async _hydrate(row: any): Promise<ICatalogProduct> {
+    private async _hydrate(row: ProductRow): Promise<ICatalogProduct> {
         const [imgRows, varRows] = await Promise.all([
-            dbQuery<any>(
+            dbQuery<ImageRow>(
                 `SELECT * FROM product_images WHERE product_id = $1 ORDER BY position ASC`,
                 [row.id]
             ),
-            dbQuery<any>(
+            dbQuery<VariantRow>(
                 `SELECT * FROM product_variants WHERE product_id = $1 ORDER BY id ASC`,
                 [row.id]
             ),
         ]);
 
         const images: ICatalogImage[] = imgRows.map((img) => ({
-            url: img.url,
+            url: normalizeImageUrl(img.url),
             alt: img.alt ?? row.title,
             position: img.position,
             colourCode: img.colour_code ?? undefined,
@@ -212,9 +275,9 @@ class PostgresCatalogRepository implements ICatalogProvider {
             colour: v.colour ?? "",
             colourCode: v.colour_code ?? "",
             sizeLabel: v.size_label,
-            sizeType: v.size_type ?? "X",
-            price: parseFloat(v.price ?? "0"),
-            compareAtPrice: v.compare_at_price ? parseFloat(v.compare_at_price) : undefined,
+            sizeType: (v.size_type ?? "X") as ICatalogVariant["sizeType"],
+            price: parseFloat(String(v.price ?? "0")),
+            compareAtPrice: v.compare_at_price ? parseFloat(String(v.compare_at_price)) : undefined,
             stockTotal: v.stock_total ?? 0,
         }));
 

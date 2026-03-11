@@ -40,6 +40,21 @@ const EXTRA_SOURCES = [
     { dir: path.join(ROOT_DIR, "Zip T-shirts 2025"), category: "T-SHIRTS" },
 ];
 
+// Category directory name → public/ subdirectory name override.
+// Without this, slugify("POLO_S") = "polo-s" but the actual directory in public/ is "polos".
+const CATEGORY_DIR_OVERRIDE: Record<string, string> = {
+    "POLO_S": "polos",
+    "JACKET, FLEECY & SWEAT TOPS": "jackets",
+    "JACKET, FLEECY & SWEAT TOPS (1)": "jackets",
+    "SPORT JACKETS & SUIT COATS": "sport-jackets",
+    "SPORT JACKETS & SUIT COATS (1)": "sport-jackets",
+    "TALL ITEMS (MIX)": "tall-mix",
+    "TROUSERS, JEANS & TRACKPANTS": "trousers",
+    "TROUSERS, JEANS & TRACKPANTS (1)": "trousers",
+    "ACCESSORIES & BELTS": "accessories",
+    "ACCESSORIES & BELTS (1)": "accessories",
+};
+
 // Category → catalog path mapping
 const CATEGORY_MAP: Record<string, string> = {
     "POLO_S": "Menswear|Tops|Polos",
@@ -143,7 +158,8 @@ function buildManifest(): ImageManifestEntry[] {
                 const { sku, colourCode } = parsed;
                 const localPath = path.join(catFull, file);
                 const productSlug = slugify(`${sku}-${colourCode}`);
-                const publicPath = `/products/${slugify(category)}/${sku}_${colourCode}.jpg`;
+                const dirName = CATEGORY_DIR_OVERRIDE[category] ?? slugify(category);
+                const publicPath = `/products/${dirName}/${sku}_${colourCode}.jpg`;
 
                 manifest.push({
                     sku,
@@ -171,7 +187,8 @@ function buildManifest(): ImageManifestEntry[] {
             if (!parsed) continue;
             const { sku, colourCode } = parsed;
             const localPath = path.join(extra.dir, file);
-            const publicPath = `/products/${slugify(category)}/${sku}_${colourCode}.jpg`;
+            const dirName = CATEGORY_DIR_OVERRIDE[category] ?? slugify(category);
+            const publicPath = `/products/${dirName}/${sku}_${colourCode}.jpg`;
             manifest.push({
                 sku, colourCode, colourName: toColourName(colourCode),
                 category, categoryPath, localPath, filename: file, publicPath, url: publicPath,
@@ -198,8 +215,8 @@ function copyImagesToPublic(manifest: ImageManifestEntry[]): void {
         try {
             fs.copyFileSync(entry.localPath, destPath);
             copied++;
-        } catch (e: any) {
-            console.warn(`  [WARN] Copy failed for ${entry.filename}: ${e.message}`);
+        } catch (e: unknown) {
+            console.warn(`  [WARN] Copy failed for ${entry.filename}: ${e instanceof Error ? e.message : String(e)}`);
         }
     }
 
@@ -364,8 +381,8 @@ async function uploadToR2(manifest: ImageManifestEntry[]): Promise<ImageManifest
             entry.r2Key = key;
             entry.url = publicUrl;
             uploaded++;
-        } catch (e: any) {
-            console.warn(`  [WARN] Upload failed for ${entry.filename}: ${e.message}`);
+        } catch (e: unknown) {
+            console.warn(`  [WARN] Upload failed for ${entry.filename}: ${e instanceof Error ? e.message : String(e)}`);
             failed++;
         }
     }

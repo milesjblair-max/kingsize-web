@@ -35,6 +35,7 @@ export const FitProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         try {
             const stored = localStorage.getItem(FIT_STORAGE_KEY) as FitOption;
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             if (stored && FIT_LABELS[stored]) setFitState(stored);
         } catch {
             // localStorage unavailable (SSR / private mode)

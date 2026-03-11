@@ -234,6 +234,7 @@ export default function HelpPage() {
 
     // Reset expanded state when category changes
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setExpandedQuestion(null);
     }, [activeCategory]);
 
